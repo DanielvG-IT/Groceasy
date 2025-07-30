@@ -81,7 +81,6 @@ package-lock.json
 ####################
 docker-compose.override.yml
 docker-compose.local.yml
-**/.dockerignore
 docker.env
 .dokploy/
 .dokploy-logs/
