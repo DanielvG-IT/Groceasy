@@ -1,0 +1,92 @@
+# Global ignores
+*.DS_Store
+*.env
+*.env.*
+.env.local
+.env.production
+node_modules/
+dist/
+.vscode/
+.idea/
+*.log
+logs/
+*.swp
+*.swo
+Thumbs.db
+
+####################
+# Backend (.NET)
+####################
+# Build output
+bin/
+obj/
+*.user
+*.suo
+*.vspscc
+*.vssscc
+*.cache
+*.pdb
+*.mdb
+
+# Rider/Resharper
+.idea/
+*.DotSettings.user
+
+# ASP.NET secrets
+secrets.json
+
+# Dotnet tools
+.nuget/
+*.nupkg
+
+####################
+# Frontend (Next.js)
+####################
+/frontend/.next/
+/frontend/node_modules/
+/frontend/out/
+
+####################
+# Mobile (React Native)
+####################
+/mobile/node_modules/
+/mobile/ios/build/
+/mobile/android/app/build/
+/mobile/android/.gradle/
+/mobile/android/.idea/
+/mobile/ios/Pods/
+/mobile/ios/.xcworkspace/
+/mobile/ios/*.xcworkspace
+/mobile/ios/Podfile.lock
+/mobile/ios/Podfile
+
+# Xcode files
+*.xcodeproj/*
+*.xcworkspace/*
+*.xcuserstate
+*.xcuserdata/
+
+# Metro bundler cache
+.expo/
+.expo-shared/
+.cache/
+*.expo/*
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+
+####################
+# Docker/Dokploy
+####################
+docker-compose.override.yml
+docker-compose.local.yml
+**/.dockerignore
+docker.env
+.dokploy/
+.dokploy-logs/
+
+####################
+# PostgreSQL (optional - local only)
+/pgdata/
+
