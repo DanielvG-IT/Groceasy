@@ -1,0 +1,41 @@
+using Backend.API.Models.Auth;
+using Microsoft.AspNetCore.Identity;
+
+namespace Backend.API.Interfaces
+{
+    /// <summary>
+    /// Defines authentication-related operations such as user registration and login.
+    /// </summary>
+    public interface IAuthService
+    {
+        /// <summary>
+        /// Registers a new user with the provided registration details.
+        /// </summary>
+        /// <param name="model">The registration details for the new user.</param>
+        /// <returns>
+        /// A <see cref="Task"/> that represents the asynchronous operation, containing an <see cref="IdentityResult"/>
+        /// indicating the outcome of the registration.
+        /// </returns>
+        Task<IdentityResult> RegisterAsync(RegisterModel model);
+
+        /// <summary>
+        /// Authenticates a user with the provided login credentials.
+        /// </summary>
+        /// <param name="model">The login credentials of the user.</param>
+        /// <returns>
+        /// A <see cref="Task"/> that represents the asynchronous operation, containing a <see cref="TokenResponseDto"/>
+        /// if authentication is successful; otherwise, <c>null</c>.
+        /// </returns>
+        Task<TokenResponseDto?> LoginAsync(LoginModel model);
+
+        /// <summary>
+        /// Refreshes the authentication token for the specified user using the provided refresh token.
+        /// </summary>
+        /// <param name="userId">The unique identifier of the user whose token is to be refreshed.</param>
+        /// <param name="refreshToken">The refresh token used to obtain a new authentication token.</param>
+        /// <returns>
+        /// A <see cref="TokenResponseDto"/> containing the new authentication token if the refresh is successful; otherwise, <c>null</c>.
+        /// </returns>
+        Task<TokenResponseDto?> RefreshToken(RefreshRequestDto requestDto);
+    }
+}
