@@ -1,16 +1,15 @@
 using Backend.API.Models;
+using Backend.API.Interfaces;
 using Backend.API.Models.Auth;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Identity;
-using System.Security.Claims;
-using Microsoft.IdentityModel.Tokens;
 using Microsoft.AspNetCore.Authorization;
-using System.Text;
-using System.IdentityModel.Tokens.Jwt;
-using Backend.API.Interfaces;
-using System.Data;
-using Microsoft.AspNetCore.Identity.Data;
 
+/// <summary>
+/// Controller responsible for authentication-related endpoints such as registration, login, and token refresh.
+/// </summary>
+/// <remarks>
+/// All endpoints are anonymous and use <see cref="ApiErrorDto"/> for error responses.
+/// </remarks>
 namespace Backend.API.Controllers
 {
     [ApiController]
@@ -27,7 +26,14 @@ namespace Backend.API.Controllers
             var registerResult = await _authService.RegisterAsync(model);
             if (registerResult is null || registerResult.Succeeded != true)
             {
-                return BadRequest(new ApiErrorDto { });
+                return BadRequest(new ApiErrorDto
+                {
+                    Title = "Registration Failed",
+                    ErrorCode = "RegistrationError",
+                    Timestamp = DateTimeOffset.UtcNow,
+                    Detail = "The registration process encountered an error. Please try again.",
+                    Status = StatusCodes.Status400BadRequest
+                });
             }
             return Ok();
         }
@@ -38,18 +44,32 @@ namespace Backend.API.Controllers
             var loginResult = await _authService.LoginAsync(model);
             if (loginResult is null)
             {
-                return BadRequest(new ApiErrorDto { });
+                return BadRequest(new ApiErrorDto
+                {
+                    Title = "Invalid Login",
+                    ErrorCode = "InvalidCredentials",
+                    Timestamp = DateTimeOffset.UtcNow,
+                    Detail = "The provided login credentials are incorrect.",
+                    Status = StatusCodes.Status400BadRequest
+                });
             }
             return Ok(loginResult);
         }
 
-        [HttpPost("refresh")] // TODO How to create refresh token during login?
+        [HttpPost("refresh")]
         public async Task<IActionResult> Refresh(RefreshRequestDto refreshRequest)
         {
             var refreshResult = await _authService.RefreshToken(refreshRequest);
-            if (refreshRequest is null)
+            if (refreshResult is null)
             {
-                return BadRequest();
+                return BadRequest(new ApiErrorDto
+                {
+                    Title = "Invalid Refresh Token",
+                    ErrorCode = "InvalidToken",
+                    Timestamp = DateTimeOffset.UtcNow,
+                    Detail = "The provided refresh token is invalid or has expired.",
+                    Status = StatusCodes.Status400BadRequest
+                });
             }
             return Ok(refreshResult);
         }
