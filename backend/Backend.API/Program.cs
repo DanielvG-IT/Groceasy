@@ -14,7 +14,7 @@ var builder = WebApplication.CreateBuilder(args);
 var connectionString = builder.Configuration.GetConnectionString("GroceasyDbConnection") ?? throw new InvalidOperationException("Missing connection string: 'GroceasyDbConnection'. Please ensure it is set in your appsettings.json or environment variables.");
 var issuer = builder.Configuration["JwtSettings:Issuer"] ?? throw new InvalidOperationException("Missing configuration value: 'JwtSettings:Issuer'. Please ensure it is set in your appsettings.json or environment variables.");
 var audience = builder.Configuration["JwtSettings:Audience"] ?? throw new InvalidOperationException("Missing configuration value: 'JwtSettings:Audience'. Please ensure it is set in your appsettings.json or environment variables.");
-var key = builder.Configuration["JwtSettings:Key"] ?? throw new InvalidOperationException("Missing configuration value: 'JwtSettings:Key'. Please ensure it is set in your appsettings.json or environment variables.");
+var key = builder.Configuration["JwtSettings:SecretKey"] ?? throw new InvalidOperationException("Missing configuration value: 'JwtSettings:Key'. Please ensure it is set in your appsettings.json or environment variables.");
 
 builder.Services.AddIdentity<AppUser, IdentityRole>().AddEntityFrameworkStores<ApplicationDbContext>().AddDefaultTokenProviders();
 builder.Services.Configure<IdentityOptions>(i =>
