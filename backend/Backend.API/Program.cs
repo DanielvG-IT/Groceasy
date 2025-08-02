@@ -16,11 +16,11 @@ var issuer = builder.Configuration["JwtSettings:Issuer"] ?? throw new InvalidOpe
 var audience = builder.Configuration["JwtSettings:Audience"] ?? throw new InvalidOperationException("Missing configuration value: 'JwtSettings:Audience'. Please ensure it is set in your appsettings.json or environment variables.");
 var key = builder.Configuration["JwtSettings:SecretKey"] ?? throw new InvalidOperationException("Missing configuration value: 'JwtSettings:Key'. Please ensure it is set in your appsettings.json or environment variables.");
 
+// Add services to the container.
 builder.Services.AddIdentity<AppUser, IdentityRole>().AddEntityFrameworkStores<ApplicationDbContext>().AddDefaultTokenProviders();
 builder.Services.Configure<IdentityOptions>(i =>
 {
     i.Password.RequireDigit = true;
-    // Add services to the container.
     i.Password.RequireLowercase = true;
     i.Password.RequireUppercase = true;
     i.Password.RequireNonAlphanumeric = true;
