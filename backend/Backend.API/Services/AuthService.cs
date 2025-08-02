@@ -7,6 +7,7 @@ using System.Text;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.IdentityModel.Tokens.Jwt;
+using Backend.API.Models.Errors;
 
 namespace Backend.API.Services
 {
@@ -25,74 +26,207 @@ namespace Backend.API.Services
         private readonly int RefreshTokenExpiryTime = configuration.GetValue<int>("JwtSettings:RefreshTokenExpiryTime", 24);
         private readonly int RefreshTokenLength = configuration.GetValue<int>("JwtSettings:RefreshTokenLength", 64);
 
-        public async Task<IdentityResult> RegisterAsync(RegisterModel model)
+        public async Task<IOperationResult> RegisterAsync(RegisterModel model)
         {
+            if (model is null)
+            {
+                _logger.LogError("Registration failed: Model is null.");
+                return OperationResult.Failed(new ApiErrorDto
+                {
+                    Title = "Input is invalid.",
+                    ErrorCode = "InvalidModel",
+                });
+            }
+
+            if (string.IsNullOrWhiteSpace(model.Email) || string.IsNullOrWhiteSpace(model.Password))
+            {
+                _logger.LogError("Registration failed: Email or Password is empty.");
+                return OperationResult.Failed(new ApiErrorDto
+                {
+                    Title = "Email and Password are required.",
+                    ErrorCode = "InvalidInput",
+                });
+            }
+
             var existingUser = await _userManager.FindByEmailAsync(model.Email);
             if (existingUser is not null)
             {
-                return IdentityResult.Failed(new IdentityError
+                _logger.LogWarning("Registration failed: Email is already in use.");
+                return OperationResult.Failed(new ApiErrorDto
                 {
-                    Code = "DuplicateEmail",
-                    Description = "Email is already in use."
+                    Title = "Email is already in use.",
+                    ErrorCode = "DuplicateEmail",
                 });
             }
 
             var user = new AppUser { UserName = model.Email, Email = model.Email };
-            return await _userManager.CreateAsync(user, model.Password);
+
+            try
+            {
+                var result = await _userManager.CreateAsync(user, model.Password);
+                if (!result.Succeeded)
+                {
+                    _logger.LogError("Registration failed: {Errors}", string.Join(", ", result.Errors.Select(e => e.Description)));
+                }
+                return result.Succeeded
+                    ? OperationResult.Success()
+                    : OperationResult.Failed(new ApiErrorDto
+                    {
+                        Title = "Registration failed.",
+                        ErrorCode = "RegistrationError",
+                    });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "An unexpected error occurred during registration.");
+                return OperationResult.Failed(new ApiErrorDto
+                {
+                    Title = "An unexpected error occurred. Please try again later.",
+                    ErrorCode = "UnexpectedError",
+                });
+            }
         }
 
-        public async Task<TokenResponseDto?> LoginAsync(LoginModel model)
+        public async Task<IOperationResult<TokenResponseDto?>> LoginAsync(LoginModel model)
         {
-            var result = await _signInManager.PasswordSignInAsync(model.Email, model.Password, model.RememberMe, false);
-            if (!result.Succeeded)
+            if (model is null)
             {
-                return null;
-            }
-            var appUser = await _userManager.FindByEmailAsync(model.Email);
-            if (appUser is null)
-            {
-                return null;
-            }
-
-            var token = GenerateToken(appUser);
-            var refreshToken = await GenerateRefreshToken(appUser);
-            if (string.IsNullOrEmpty(token) || string.IsNullOrEmpty(refreshToken))
-            {
-                return null;
+                _logger.LogError("Login failed: Model is null.");
+                return OperationResult<TokenResponseDto?>.Failed(new ApiErrorDto
+                {
+                    Title = "Input is invalid.",
+                    ErrorCode = "InvalidModel",
+                });
             }
 
-            return new TokenResponseDto
+            if (string.IsNullOrWhiteSpace(model.Email) || string.IsNullOrWhiteSpace(model.Password))
             {
-                Token = token,
-                TokenExpiry = DateTime.UtcNow.AddMinutes(TokenExpiryTime),
-                RefreshToken = refreshToken,
-                RefreshTokenExpiry = DateTime.UtcNow.AddHours(RefreshTokenExpiryTime)
-            };
+                _logger.LogError("Login failed: Email or Password is empty.");
+                return OperationResult<TokenResponseDto?>.Failed(new ApiErrorDto
+                {
+                    Title = "Email and Password are required.",
+                    ErrorCode = "InvalidInput",
+                });
+            }
+
+            try
+            {
+                var result = await _signInManager.PasswordSignInAsync(model.Email, model.Password, model.RememberMe, false);
+                if (!result.Succeeded)
+                {
+                    _logger.LogWarning("Login failed: Invalid credentials for Email {Email}.", model.Email);
+                    return OperationResult<TokenResponseDto?>.Failed(new ApiErrorDto
+                    {
+                        Title = "Invalid credentials.",
+                        ErrorCode = "InvalidCredentials",
+                    });
+                }
+
+                var appUser = await _userManager.FindByEmailAsync(model.Email);
+                if (appUser is null)
+                {
+                    _logger.LogError("Login failed: User not found for Email {Email}.", model.Email);
+                    return OperationResult<TokenResponseDto?>.Failed(new ApiErrorDto
+                    {
+                        Title = "User not found.",
+                        ErrorCode = "UserNotFound",
+                    });
+                }
+
+                // TODO Add 2FA support
+                // if (!appUser.EmailConfirmed)
+                // {
+                //     _logger.LogWarning("Login failed: Email {Email} is not confirmed.", model.Email);
+                //     return OperationResult.Failed(new ApiErrorDto
+                //     {
+                //     Title = "Email is not confirmed.",
+                //     ErrorCode = "EmailNotConfirmed",
+                //     });
+                // }
+
+                var token = GenerateToken(appUser);
+                if (string.IsNullOrEmpty(token))
+                {
+                    _logger.LogError("Login failed: Token generation failed for Email {Email}.", model.Email);
+                    return OperationResult<TokenResponseDto?>.Failed(new ApiErrorDto
+                    {
+                        Title = "Token generation failed.",
+                        ErrorCode = "TokenGenerationFailed",
+                    });
+                }
+
+                var refreshToken = await GenerateRefreshToken(appUser);
+                if (string.IsNullOrEmpty(refreshToken))
+                {
+                    _logger.LogError("Login failed: Refresh token generation failed for Email {Email}.", model.Email);
+                    return OperationResult<TokenResponseDto?>.Failed(new ApiErrorDto
+                    {
+                        Title = "Refresh token generation failed.",
+                        ErrorCode = "RefreshTokenGenerationFailed",
+                    });
+                }
+
+                return OperationResult<TokenResponseDto?>.Success(new TokenResponseDto
+                {
+                    Token = token,
+                    TokenExpiry = DateTime.UtcNow.AddMinutes(TokenExpiryTime),
+                    RefreshToken = refreshToken,
+                    RefreshTokenExpiry = DateTime.UtcNow.AddHours(RefreshTokenExpiryTime)
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "An unexpected error occurred during login.");
+                return OperationResult<TokenResponseDto?>.Failed(new ApiErrorDto
+                {
+                    Title = "An unexpected error occurred. Please try again later.",
+                    ErrorCode = "UnexpectedError",
+                });
+            }
         }
 
-        public async Task<TokenResponseDto?> RefreshToken(RefreshRequestDto request)
+        public async Task<IOperationResult<TokenResponseDto?>> RefreshToken(RefreshRequestDto request)
         {
             var appUser = await _userManager.FindByIdAsync(request.UserId);
             if (appUser is null || appUser.RefreshToken != request.RefreshToken || appUser.RefreshTokenExpiryTime <= DateTime.UtcNow)
             {
-                _logger.LogError("Failed to generate token: AppUser is null or has an invalid Email.");
-                return null;
+                _logger.LogError("Refresh token failed: Invalid refresh token or user not found.");
+                return OperationResult<TokenResponseDto?>.Failed(new ApiErrorDto
+                {
+                    Title = "Invalid refresh token or user not found.",
+                    ErrorCode = "InvalidRefreshToken",
+                });
             }
 
             var token = GenerateToken(appUser);
-            var newRefreshToken = await GenerateRefreshToken(appUser);
-            if (string.IsNullOrEmpty(token) || string.IsNullOrEmpty(newRefreshToken))
+            if (string.IsNullOrEmpty(token))
             {
-                return null;
+                _logger.LogError("Refresh token failed: Token generation failed for UserId {UserId}.", request.UserId);
+                return OperationResult<TokenResponseDto?>.Failed(new ApiErrorDto
+                {
+                    Title = "Token generation failed.",
+                    ErrorCode = "TokenGenerationFailed",
+                });
             }
 
-            return new TokenResponseDto
+            var newRefreshToken = await GenerateRefreshToken(appUser);
+            if (string.IsNullOrEmpty(newRefreshToken))
+            {
+                _logger.LogError("Refresh token failed: Refresh token generation failed for UserId {UserId}.", request.UserId);
+                return OperationResult<TokenResponseDto?>.Failed(new ApiErrorDto
+                {
+                    Title = "Refresh token generation failed.",
+                    ErrorCode = "RefreshTokenGenerationFailed",
+                });
+            }
+
+            return OperationResult<TokenResponseDto?>.Success(new TokenResponseDto
             {
                 Token = token,
                 TokenExpiry = DateTime.UtcNow.AddMinutes(TokenExpiryTime),
                 RefreshToken = newRefreshToken,
                 RefreshTokenExpiry = DateTime.UtcNow.AddHours(RefreshTokenExpiryTime)
-            };
+            });
         }
 
         private string? GenerateToken(AppUser appUser)

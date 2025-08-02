@@ -1,4 +1,5 @@
 using Backend.API.Models.Auth;
+using Backend.API.Models.Errors;
 using Microsoft.AspNetCore.Identity;
 
 namespace Backend.API.Interfaces
@@ -16,7 +17,7 @@ namespace Backend.API.Interfaces
         /// A <see cref="Task"/> that represents the asynchronous operation, containing an <see cref="IdentityResult"/>
         /// indicating the outcome of the registration.
         /// </returns>
-        Task<IdentityResult> RegisterAsync(RegisterModel model);
+        Task<IOperationResult> RegisterAsync(RegisterModel model);
 
         /// <summary>
         /// Authenticates a user with the provided login credentials.
@@ -26,7 +27,7 @@ namespace Backend.API.Interfaces
         /// A <see cref="Task"/> that represents the asynchronous operation, containing a <see cref="TokenResponseDto"/>
         /// if authentication is successful; otherwise, <c>null</c>.
         /// </returns>
-        Task<TokenResponseDto?> LoginAsync(LoginModel model);
+        Task<IOperationResult<TokenResponseDto?>> LoginAsync(LoginModel model);
 
         /// <summary>
         /// Refreshes the authentication token for the specified user using the provided refresh token.
@@ -36,6 +37,6 @@ namespace Backend.API.Interfaces
         /// <returns>
         /// A <see cref="TokenResponseDto"/> containing the new authentication token if the refresh is successful; otherwise, <c>null</c>.
         /// </returns>
-        Task<TokenResponseDto?> RefreshToken(RefreshRequestDto requestDto);
+        Task<IOperationResult<TokenResponseDto?>> RefreshToken(RefreshRequestDto requestDto);
     }
 }
