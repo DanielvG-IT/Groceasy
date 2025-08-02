@@ -42,9 +42,9 @@ secrets.json
 ####################
 # Frontend (Next.js)
 ####################
-/frontend/.next/
-/frontend/node_modules/
-/frontend/out/
+.next/
+out/
+.next/cache/
 
 ####################
 # Mobile (React Native)
