@@ -1,7 +1,8 @@
+// .NET Core
 export interface loginDto {
   email: string;
   password: string;
-  rememberMe: boolean; // ISO string if coming from JSON, or `Date` if parsed
+  rememberMe: boolean;
 }
 
 export interface registerDto {
@@ -9,7 +10,6 @@ export interface registerDto {
   lastName: string;
   email: string;
   password: string;
-  confirmPassword: string;
 }
 
 export interface refreshRequestDto {
@@ -22,4 +22,13 @@ export interface tokenResponseDto {
   tokenExpiry: Date;
   refreshToken: string;
   refreshTokenExiry: Date;
+}
+
+// NextJS
+export interface RegisterModel {
+  firstName: string;
+  lastName: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
 }

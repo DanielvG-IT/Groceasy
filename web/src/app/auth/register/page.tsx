@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { useActionState } from "react";
 import { useRouter } from "next/navigation";
 import { register } from "@/actions/user-actions";
-import { registerDto } from "@/models/auth";
+import { registerDto, RegisterModel } from "@/models/auth";
 
 const RegisterPage = () => {
   const router = useRouter();
@@ -17,7 +17,7 @@ const RegisterPage = () => {
     e.preventDefault();
     setStatus("loading");
     const formData = new FormData(e.currentTarget);
-    const data: registerDto = {
+    const data: RegisterModel = {
       firstName: formData.get("firstName") as string,
       lastName: formData.get("lastName") as string,
       email: formData.get("email") as string,

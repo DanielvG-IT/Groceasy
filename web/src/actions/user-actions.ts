@@ -1,7 +1,7 @@
 "use server";
 
 import { cookies } from "next/headers";
-import { loginDto, registerDto } from "@/models/auth";
+import { loginDto, registerDto, RegisterModel } from "@/models/auth";
 import { ApiErrorDto } from "@/models/error";
 import { redirect } from "next/navigation";
 import { tokenResponseDto } from "@/models/auth";
@@ -68,7 +68,11 @@ export const logout = async () => {
   redirect("/auth/login"); // TODO May redirect to root /
 };
 
-export const register = async (registerDto: registerDto) => {
+export const register = async (registerDto: RegisterModel) => {
+  if (registerDto.password !== registerDto.confirmPassword) {
+    return { errorMessage: "Passwords do not match. Please try again." };
+  }
+
   const reqOptions = {
     method: "POST",
     headers: {
