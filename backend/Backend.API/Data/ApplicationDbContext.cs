@@ -11,5 +11,12 @@ namespace Backend.API.Data
         public DbSet<ShoppingList> ShoppingLists { get; set; }
         public DbSet<ShoppingItem> ShoppingItems { get; set; }
         public DbSet<StoreTag> StoreTags { get; set; }
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            base.OnModelCreating(modelBuilder);
+
+            modelBuilder.Entity<UserHousehold>().HasKey(uh => new { uh.UserId, uh.HouseholdId });
+        }
     }
 }

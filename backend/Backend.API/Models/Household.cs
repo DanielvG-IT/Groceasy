@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -12,9 +13,12 @@ namespace Backend.API.Models
 
         [Required]
         [MaxLength(50)]
-        public required string Name { get; set; }
+        public string Name { get; set; } = null!;
 
-        public required ICollection<UserHousehold> Members { get; set; }
-        public required ICollection<ShoppingList> ShoppingLists { get; set; }
+        // Navigation property for Members
+        public virtual ICollection<UserHousehold> Members { get; set; } = new HashSet<UserHousehold>();
+
+        // Navigation property for ShoppingLists
+        public virtual ICollection<ShoppingList> ShoppingLists { get; set; } = new HashSet<ShoppingList>();
     }
 }
