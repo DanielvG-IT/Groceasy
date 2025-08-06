@@ -1,32 +1,20 @@
-import { useEffect, useState } from "react";
-import { Stack, useRouter } from "expo-router";
+import { Redirect } from "expo-router";
 import { useAuthStore } from "@/stores/authStore";
+import { View, ActivityIndicator } from "react-native";
 
-export default function RootLayout() {
-  const [isReady, setIsReady] = useState(false);
-  const router = useRouter();
+export default function Index() {
+  const { isHydrated, tokenExpiry, token } = useAuthStore();
 
-  useEffect(() => {
-    const checkAuth = async () => {
-      const token = useAuthStore.getState().getToken();
-
-      if (token) {
-        router.replace("/home"); // route in (tabs) group
-      } else {
-        router.replace("/login"); // route in (auth) group
-      }
-
-      setIsReady(true);
-    };
-
-    checkAuth();
-  }, [router]);
-
-  if (!isReady) return null;
-
-  if (!isReady) {
-    return <Stack.Screen name="loader" options={{ headerShown: false }} />;
+  if (!isHydrated) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <ActivityIndicator size="large" />
+      </View>
+    );
   }
 
-  return <Stack screenOptions={{ headerShown: false }} />;
+  const isTokenValid =
+    token && tokenExpiry && new Date(tokenExpiry) > new Date();
+
+  return isTokenValid ? <Redirect href="/home" /> : <Redirect href="/login" />;
 }
