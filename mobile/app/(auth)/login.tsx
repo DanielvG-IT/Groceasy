@@ -1,10 +1,12 @@
-import { View, Text, TextInput, TouchableOpacity } from "react-native";
-import React, { useState } from "react";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
+import { View, Text, TextInput, TouchableOpacity } from "react-native";
 import { styles } from "@/assets/styles/auth.styles";
+import { COLORS } from "@/assets/styles/colors";
+import { login } from "@/services/userService";
 import { Link, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { COLORS } from "@/assets/styles/colors";
+import React, { useState } from "react";
+import { loginDto } from "@/models/auth";
 
 const LoginScreen = () => {
   const router = useRouter();
@@ -13,7 +15,27 @@ const LoginScreen = () => {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
-  const onLoginPress = () => [];
+  const onLoginPress = async () => {
+    setError("");
+    try {
+      const logindto = {
+        email: emailAddress,
+        password: password,
+        rememberMe: true,
+      } as loginDto;
+
+      const loginResult = await login(logindto);
+      if (loginResult.errorMessage) {
+        setError(loginResult.errorMessage || "Login failed. Please try again.");
+      }
+
+      if (loginResult.successMessage) {
+        router.replace("/");
+      }
+    } catch (err: any) {
+      setError(err.message || "Login failed. Please try again.");
+    }
+  };
 
   return (
     <KeyboardAwareScrollView
