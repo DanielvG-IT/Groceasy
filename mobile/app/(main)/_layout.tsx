@@ -1,6 +1,6 @@
 import { Slot, useRouter } from "expo-router";
 import { useEffect } from "react";
-import { useAuthStore } from "@/lib/authStore";
+import { useAuthStore } from "@/stores/authStore";
 import { ROUTES } from "@/lib/routes";
 
 export default function AppLayout() {

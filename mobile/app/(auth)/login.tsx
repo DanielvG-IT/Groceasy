@@ -2,7 +2,7 @@ import { View, Text, TextInput, Button, Alert } from "react-native";
 import React, { useState } from "react";
 import { useRouter } from "expo-router";
 import { ROUTES } from "@/lib/routes";
-import { useAuthStore } from "@/lib/authStore";
+import { useAuthStore } from "@/stores/authStore";
 import { signin } from "@/services/userService";
 import { loginDto } from "@/models/auth";
 
