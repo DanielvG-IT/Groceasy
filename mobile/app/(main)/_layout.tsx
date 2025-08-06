@@ -1,17 +1,28 @@
-import { Slot, useRouter } from "expo-router";
-import { useEffect } from "react";
+import { Redirect, Stack } from "expo-router";
 import { useAuthStore } from "@/stores/authStore";
-import { ROUTES } from "@/lib/routes";
+import { ActivityIndicator, View } from "react-native";
 
-export default function AppLayout() {
-  const { token } = useAuthStore();
-  const router = useRouter();
+const MainLayout = () => {
+  const { isHydrated, tokenExpiry, token } = useAuthStore();
 
-  useEffect(() => {
-    if (!token) {
-      router.replace(ROUTES.LOGIN);
-    }
-  }, [token, router]);
+  // Wait for Zustand to hydrate before doing anything
+  if (!isHydrated) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <ActivityIndicator size="large" />
+      </View>
+    );
+  }
 
-  return <Slot />;
-}
+  // Redirect if no valid token
+  const isTokenValid =
+    token && tokenExpiry && new Date(tokenExpiry) > new Date();
+
+  if (!isTokenValid) {
+    return <Redirect href="/login" />;
+  }
+
+  return <Stack screenOptions={{ headerShown: false }} />;
+};
+
+export default MainLayout;

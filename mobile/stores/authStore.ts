@@ -20,6 +20,7 @@ type AuthStore = {
   tokenExpiry: Date | null;
   refreshToken: string | null;
   refreshTokenExpiry: Date | null;
+  isHydrated: boolean;
 
   setToken: (
     token: string,
@@ -38,6 +39,7 @@ export const useAuthStore = create<AuthStore>()(
       tokenExpiry: null,
       refreshToken: null,
       refreshTokenExpiry: null,
+      isHydrated: false,
 
       setToken: (token, tokenExpiry, refreshToken, refreshTokenExpiry) =>
         set(() => {
@@ -71,6 +73,9 @@ export const useAuthStore = create<AuthStore>()(
     {
       name: "auth-storage",
       storage: asyncStorageAdapter,
+      onRehydrateStorage: () => () => {
+        useAuthStore.setState({ isHydrated: true });
+      },
     }
   )
 );
