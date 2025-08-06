@@ -59,6 +59,7 @@ out/
 /mobile/ios/*.xcworkspace
 /mobile/ios/Podfile.lock
 /mobile/ios/Podfile
+/mobile/expo-env.d.ts
 
 # Xcode files
 *.xcodeproj/*
