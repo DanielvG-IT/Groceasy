@@ -21,7 +21,7 @@ export interface tokenResponseDto {
   token: string;
   tokenExpiry: Date;
   refreshToken: string;
-  refreshTokenExiry: Date;
+  refreshTokenExpiry: Date;
 }
 
 // NextJS
