@@ -1,4 +1,5 @@
 import { loginDto, RegisterModel, tokenResponseDto } from "@/models/auth";
+import { useAuthStore } from "@/stores/authStore";
 import { ApiErrorDto } from "@/models/error";
 import Constants from "expo-constants";
 
@@ -7,16 +8,7 @@ if (!backendUrl) {
   throw new Error("Backend URL is not defined in the configuration.");
 }
 
-export const signin = async (
-  loginDto: loginDto,
-  authStore: {
-    token: string | null;
-    storeToken: Function;
-    removeToken: Function;
-    getToken: Function;
-  }
-) => {
-  const { storeToken } = authStore;
+export const login = async (loginDto: loginDto) => {
   const reqOptions = {
     method: "POST",
     headers: {
@@ -56,25 +48,24 @@ export const signin = async (
   }
 
   const tokenResponse = response as tokenResponseDto;
-  storeToken(tokenResponse.token); // TODO Make the cookies expire {expires: new Date(Date.now() + 7 days}
+  useAuthStore
+    .getState()
+    .setToken(
+      tokenResponse.token,
+      new Date(tokenResponse.tokenExpiry),
+      tokenResponse.refreshToken,
+      new Date(tokenResponse.refreshTokenExpiry)
+    );
+  // TODO Make the cookies expire {expires: new Date(Date.now() + 7 days}
 
   return { successMessage: "Login successful!" };
 };
 
-export const logout = async (authStore: {
-  token: string;
-  storeToken: Function;
-  removeToken: Function;
-  getToken: Function;
-}) => {
-  const { removeToken } = authStore;
-  removeToken();
+export const logout = async () => {
+  useAuthStore.getState().removeToken();
 };
 
-export const register = async (
-  registerDto: RegisterModel,
-  loginDto: loginDto
-) => {
+export const register = async (registerDto: RegisterModel) => {
   if (registerDto.password !== registerDto.confirmPassword) {
     return { errorMessage: "Passwords do not match. Please try again." };
   }
