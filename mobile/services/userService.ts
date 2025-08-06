@@ -1,17 +1,16 @@
 import { loginDto, RegisterModel, tokenResponseDto } from "@/models/auth";
 import { ApiErrorDto } from "@/models/error";
+import Constants from "expo-constants";
 
-const backendApiUrl = process.env.BACKEND_API_URL;
-if (!backendApiUrl) {
-  throw new Error(
-    "BACKEND_API_URL is not defined in the environment variables."
-  );
+const backendUrl = Constants.expoConfig?.extra?.backendUrl;
+if (!backendUrl) {
+  throw new Error("Backend URL is not defined in the configuration.");
 }
 
 export const signin = async (
   loginDto: loginDto,
   authStore: {
-    token: string;
+    token: string | null;
     storeToken: Function;
     removeToken: Function;
     getToken: Function;
@@ -29,7 +28,7 @@ export const signin = async (
   let request;
 
   try {
-    request = await fetch(`${backendApiUrl}/auth/login`, reqOptions);
+    request = await fetch(`${backendUrl}/auth/login`, reqOptions);
   } catch (error: any) {
     if (error.message) {
       return { errorMessage: error.message };
@@ -90,7 +89,7 @@ export const register = async (
 
   let request;
   try {
-    request = await fetch(`${backendApiUrl}/auth/register`, reqOptions);
+    request = await fetch(`${backendUrl}/auth/register`, reqOptions);
   } catch (error: any) {
     if (error.message) {
       return { errorMessage: error.message };
@@ -110,9 +109,6 @@ export const register = async (
   } catch {
     return { errorMessage: "Failed to parse server response." };
   }
-
-  console.log(request.status);
-  console.log(response);
 
   if (!request.ok) {
     return {

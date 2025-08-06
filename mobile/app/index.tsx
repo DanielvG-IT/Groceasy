@@ -6,16 +6,16 @@ import { ROUTES } from "@/lib/routes";
 
 export default function Index() {
   const router = useRouter();
-  const { token, restore } = useAuthStore();
+  const { token, getToken } = useAuthStore();
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const checkAuth = async () => {
-      await restore();
+      await getToken();
       setLoading(false);
     };
     checkAuth();
-  }, [router, restore]);
+  }, [router, getToken]);
 
   useEffect(() => {
     if (!loading) {
