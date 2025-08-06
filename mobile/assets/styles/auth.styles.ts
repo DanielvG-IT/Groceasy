@@ -1,6 +1,6 @@
 // styles/auth.styles.js
 import { StyleSheet } from "react-native";
-import { COLORS } from "@/styles/colors";
+import { COLORS } from "@/assets/styles/colors";
 
 export const styles = StyleSheet.create({
   container: {
@@ -88,6 +88,16 @@ export const styles = StyleSheet.create({
     width: "100%",
     textAlign: "center",
     letterSpacing: 2,
+  },
+  eyeButton: {
+    position: "absolute",
+    right: 12,
+    top: "50%",
+    transform: [{ translateY: -10 }],
+    height: 20,
+    width: 20,
+    justifyContent: "center",
+    alignItems: "center",
   },
 
   // 🔴 Error styles

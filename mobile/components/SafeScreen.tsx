@@ -1,7 +1,7 @@
 import React, { ReactNode } from "react";
 import { View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { COLORS } from "@/styles/colors";
+import { COLORS } from "@/assets/styles/colors";
 
 const SafeScreen: React.FC<{ children: ReactNode }> = ({ children }) => {
   const insets = useSafeAreaInsets();
