@@ -14,6 +14,9 @@ const RegisterPage = () => {
   const [successMessage, setSuccess] = useState<string>("");
 
   const handleRegister = async (e: React.FormEvent<HTMLFormElement>) => {
+    setSuccess("");
+    setError("");
+
     e.preventDefault();
     setStatus("loading");
     const formData = new FormData(e.currentTarget);
@@ -30,7 +33,7 @@ const RegisterPage = () => {
         setStatus("idle");
       } else if (result?.successMessage) {
         setSuccess(result?.successMessage);
-        router.push("/login");
+        router.push("/auth/login");
       }
     });
   };
@@ -118,7 +121,7 @@ const RegisterPage = () => {
             <p className="mt-1 mb-1 text-sm text-red-500">{errorMessage}</p>
           )}
           {successMessage && (
-            <p className="mt-1 mb-1 text-sm text-red-500">{successMessage}</p>
+            <p className="mt-1 mb-1 text-sm text-green-500">{successMessage}</p>
           )}
           <button
             type="submit"

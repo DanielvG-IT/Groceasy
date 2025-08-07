@@ -73,7 +73,7 @@ const LoginPage = () => {
             <p className="mt-1 mb-1 text-sm text-red-500">{errorMessage}</p>
           )}
           {(status === "success" || successMessage) && (
-            <p className="mt-1 mb-1 text-sm text-red-500">{successMessage}</p>
+            <p className="mt-1 mb-1 text-sm text-green-500">{successMessage}</p>
           )}
           <button
             type="submit"
