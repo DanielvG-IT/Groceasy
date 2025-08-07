@@ -73,14 +73,14 @@ namespace Backend.API.Services
                 if (!result.Succeeded)
                 {
                     _logger.LogError("Registration failed: {Errors}", string.Join(", ", result.Errors.Select(e => e.Description)));
-                }
-                return result.Succeeded
-                    ? OperationResult.Success()
-                    : OperationResult.Failed(new ApiErrorDto
+                    return OperationResult.Failed(new ApiErrorDto
                     {
-                        Title = "Registration failed.",
-                        ErrorCode = "RegistrationError",
+                        Title = result.Errors.First().Description,
+                        ErrorCode = result.Errors.First().Code,
                     });
+                }
+
+                return OperationResult.Success();
             }
             catch (Exception ex)
             {
