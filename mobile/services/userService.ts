@@ -3,60 +3,27 @@ import { useAuthStore } from "@/stores/authStore";
 import { ApiErrorDto } from "@/models/error";
 import Constants from "expo-constants";
 
-const backendUrl = Constants.expoConfig?.extra?.backendUrl as string;
-if (!backendUrl) {
-  throw new Error("Backend URL is not defined in the configuration.");
+const backendUrl = Constants.expoConfig?.extra?.backendUrl;
+if (typeof backendUrl !== "string") {
+  throw new Error("Missing or invalid backend URL in expo config.");
 }
 
-export const login = async (loginDto: LoginDto) => {
-  const reqOptions = {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(loginDto),
-  };
+type AuthResult = { successMessage?: string; errorMessage?: string };
 
-  let request;
+export const login = async (loginDto: LoginDto): Promise<AuthResult> => {
+  const result = await postRequest<TokenResponseDto>("/auth/login", loginDto);
 
-  try {
-    request = await fetch(`${backendUrl}/auth/login`, reqOptions);
-  } catch (error: any) {
-    if (error.message) {
-      return { errorMessage: error.message };
-    } else {
-      return { errorMessage: "Something went wrong. Please try again!" };
-    }
-  }
+  if (result.errorMessage) return { errorMessage: result.errorMessage };
 
-  if (request.status >= 500 && request.status < 600) {
-    return { errorMessage: "Server error. Please try again later!" };
-  }
-
-  let response;
-  try {
-    const text = await request.text();
-    response = text ? JSON.parse(text) : {};
-  } catch {
-    return { errorMessage: "Failed to parse server response." };
-  }
-
-  if (!request.ok) {
-    return {
-      errorMessage: (response as ApiErrorDto).title || "An error occurred.",
-    };
-  }
-
-  const tokenResponse = response as TokenResponseDto;
+  const { token, tokenExpiry, refreshToken, refreshTokenExpiry } = result.data!;
   useAuthStore
     .getState()
     .setToken(
-      tokenResponse.token,
-      new Date(tokenResponse.tokenExpiry),
-      tokenResponse.refreshToken,
-      new Date(tokenResponse.refreshTokenExpiry)
+      token,
+      new Date(tokenExpiry),
+      refreshToken,
+      new Date(refreshTokenExpiry)
     );
-  // TODO Make the cookies expire {expires: new Date(Date.now() + 7 days}
 
   return { successMessage: "Login successful!" };
 };
@@ -65,47 +32,63 @@ export const logout = () => {
   useAuthStore.getState().removeToken();
 };
 
-export const register = async (registerDto: RegisterModel) => {
+export const register = async (
+  registerDto: RegisterModel
+): Promise<AuthResult> => {
   if (registerDto.password !== registerDto.confirmPassword) {
     return { errorMessage: "Passwords do not match. Please try again." };
   }
 
-  const reqOptions = {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(registerDto),
-  };
+  const result = await postRequest("/auth/register", registerDto);
 
-  let request;
-  try {
-    request = await fetch(`${backendUrl}/auth/register`, reqOptions);
-  } catch (error: any) {
-    if (error.message) {
-      return { errorMessage: error.message };
-    } else {
-      return { errorMessage: "Something went wrong. Please try again!" };
-    }
-  }
-
-  if (request.status >= 500 && request.status < 600) {
-    return { errorMessage: "Server error. Please try again later!" };
-  }
-
-  let response;
-  try {
-    const text = await request.text();
-    response = text ? JSON.parse(text) : {};
-  } catch {
-    return { errorMessage: "Failed to parse server response." };
-  }
-
-  if (!request.ok) {
-    return {
-      errorMessage: (response as ApiErrorDto).title || "An error occurred.",
-    };
-  }
+  if (result.errorMessage) return { errorMessage: result.errorMessage };
 
   return { successMessage: "Registration successful!" };
 };
+
+const postRequest = async <TResponse>(
+  endpoint: string,
+  body: any
+): Promise<{ data?: TResponse; errorMessage?: string }> => {
+  try {
+    const response = await fetchWithTimeout(`${backendUrl}${endpoint}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify(body),
+    });
+
+    if (response.status >= 500) {
+      return { errorMessage: "Server error. Please try again later!" };
+    }
+
+    const text = await response.text();
+    const parsed = text ? JSON.parse(text) : {};
+
+    if (!response.ok) {
+      return {
+        errorMessage: (parsed as ApiErrorDto).title || "An error occurred.",
+      };
+    }
+
+    return { data: parsed as TResponse };
+  } catch (error: any) {
+    return {
+      errorMessage: error.message || "Something went wrong. Please try again!",
+    };
+  }
+};
+
+const fetchWithTimeout = (
+  url: string,
+  options: RequestInit = {},
+  timeout = 10000
+) =>
+  Promise.race([
+    fetch(url, options),
+    new Promise<Response>((_, reject) =>
+      setTimeout(() => reject(new Error("Request timed out")), timeout)
+    ),
+  ]);
