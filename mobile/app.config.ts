@@ -3,10 +3,8 @@ import "dotenv/config";
 import { ExpoConfig, ConfigContext } from "@expo/config";
 
 export default ({ config }: ConfigContext): ExpoConfig => ({
-  // Spread any default config values (if you still have an app.json)
   ...config,
 
-  // Your Expo configuration
   name: "mobile",
   slug: "mobile",
   version: "1.0.0",
@@ -46,8 +44,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     typedRoutes: true,
   },
 
-  // Inject .env variables under `extra`
+  // Type-safe .env variable injection
   extra: {
-    backendUrl: process.env.BACKEND_API_URL,
-  },
+    backendUrl: process.env.BACKEND_API_URL ?? "",
+  } satisfies { backendUrl: string },
 });

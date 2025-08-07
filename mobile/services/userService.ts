@@ -3,7 +3,7 @@ import { useAuthStore } from "@/stores/authStore";
 import { ApiErrorDto } from "@/models/error";
 import Constants from "expo-constants";
 
-const backendUrl = Constants.expoConfig?.extra?.backendUrl;
+const backendUrl = Constants.expoConfig?.extra?.backendUrl as string;
 if (!backendUrl) {
   throw new Error("Backend URL is not defined in the configuration.");
 }
@@ -61,7 +61,7 @@ export const login = async (loginDto: loginDto) => {
   return { successMessage: "Login successful!" };
 };
 
-export const logout = async () => {
+export const logout = () => {
   useAuthStore.getState().removeToken();
 };
 
