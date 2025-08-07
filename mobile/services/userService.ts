@@ -1,4 +1,4 @@
-import { loginDto, RegisterModel, tokenResponseDto } from "@/models/auth";
+import { LoginDto, RegisterModel, TokenResponseDto } from "@/models/auth";
 import { useAuthStore } from "@/stores/authStore";
 import { ApiErrorDto } from "@/models/error";
 import Constants from "expo-constants";
@@ -8,7 +8,7 @@ if (!backendUrl) {
   throw new Error("Backend URL is not defined in the configuration.");
 }
 
-export const login = async (loginDto: loginDto) => {
+export const login = async (loginDto: LoginDto) => {
   const reqOptions = {
     method: "POST",
     headers: {
@@ -47,7 +47,7 @@ export const login = async (loginDto: loginDto) => {
     };
   }
 
-  const tokenResponse = response as tokenResponseDto;
+  const tokenResponse = response as TokenResponseDto;
   useAuthStore
     .getState()
     .setToken(

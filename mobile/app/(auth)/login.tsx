@@ -6,10 +6,11 @@ import { login } from "@/services/userService";
 import { Link, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useState } from "react";
-import { loginDto } from "@/models/auth";
+import { LoginDto } from "@/models/auth";
 
 const LoginScreen = () => {
   const router = useRouter();
+  const [loading, setLoading] = useState(false);
 
   const [emailAddress, setEmailAddress] = useState("");
   const [password, setPassword] = useState("");
@@ -17,23 +18,34 @@ const LoginScreen = () => {
 
   const onLoginPress = async () => {
     setError("");
+    setLoading(true);
+
+    if (!emailAddress || !password) {
+      setError("All fields are required.");
+      setLoading(false);
+      return;
+    }
+
     try {
       const logindto = {
         email: emailAddress,
         password: password,
         rememberMe: true,
-      } as loginDto;
+      } as LoginDto;
 
       const loginResult = await login(logindto);
       if (loginResult.errorMessage) {
         setError(loginResult.errorMessage || "Login failed. Please try again.");
+        setLoading(false);
       }
 
       if (loginResult.successMessage) {
+        setLoading(false);
         router.replace("/");
       }
     } catch (err: any) {
       setError(err.message || "Login failed. Please try again.");
+      setLoading(false);
     }
   };
 
@@ -79,9 +91,28 @@ const LoginScreen = () => {
           onChangeText={(password) => setPassword(password)}
         />
 
-        <TouchableOpacity style={styles.button} onPress={onLoginPress}>
-          <Text style={styles.buttonText}>Sign In</Text>
-        </TouchableOpacity>
+        {loading ? (
+          <TouchableOpacity
+            style={[
+              styles.button,
+              {
+                flexDirection: "row",
+                justifyContent: "center",
+                alignItems: "center",
+                backgroundColor: "#808080",
+              },
+            ]}
+            disabled={true}>
+            <Text style={styles.buttonText}>Logging in...</Text>
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity
+            style={styles.button}
+            onPress={onLoginPress}
+            disabled={loading}>
+            <Text style={styles.buttonText}>Sign In</Text>
+          </TouchableOpacity>
+        )}
 
         <View style={styles.footerContainer}>
           <Text style={styles.footerText}>Don&apos;t have an account?</Text>

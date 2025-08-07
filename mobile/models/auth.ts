@@ -1,23 +1,23 @@
 // .NET Core
-export interface loginDto {
+export interface LoginDto {
   email: string;
   password: string;
   rememberMe: boolean;
 }
 
-export interface registerDto {
+export interface RegisterDto {
   firstName: string;
   lastName: string;
   email: string;
   password: string;
 }
 
-export interface refreshRequestDto {
+export interface RefreshRequestDto {
   userId: string;
   refreshToken: string;
 }
 
-export interface tokenResponseDto {
+export interface TokenResponseDto {
   token: string;
   tokenExpiry: Date;
   refreshToken: string;
