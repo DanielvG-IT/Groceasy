@@ -104,9 +104,6 @@ export const register = async (registerDto: RegisterModel) => {
     return { errorMessage: "Failed to parse server response." };
   }
 
-  console.log(request.status);
-  console.log(response);
-
   if (!request.ok) {
     return {
       errorMessage: (response as ApiErrorDto).title || "An error occurred.",
