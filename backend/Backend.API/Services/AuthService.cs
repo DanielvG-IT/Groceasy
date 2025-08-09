@@ -1,13 +1,13 @@
 using Backend.API.Models;
 using Backend.API.Interfaces;
 using Backend.API.Models.Auth;
+using Backend.API.Models.Errors;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.IdentityModel.Tokens.Jwt;
-using Backend.API.Models.Errors;
 
 namespace Backend.API.Services
 {
@@ -22,9 +22,9 @@ namespace Backend.API.Services
         private readonly ILogger<AuthService> _logger = logger;
         private readonly IConfiguration _configuration = configuration;
 
-        private readonly int TokenExpiryTime = configuration.GetValue<int>("JwtSettings:TokenExpiryTime", 30);
-        private readonly int RefreshTokenExpiryTime = configuration.GetValue<int>("JwtSettings:RefreshTokenExpiryTime", 24);
-        private readonly int RefreshTokenLength = configuration.GetValue<int>("JwtSettings:RefreshTokenLength", 64);
+        private const int TokenExpiryTimeMin = 15;// 15 minutes
+        private const int RefreshTokenExpiryTimeDays = 7; // 7 Days
+        private const int RefreshTokenLength = 64;
 
         public async Task<IOperationResult> RegisterAsync(RegisterModel model)
         {
@@ -140,6 +140,9 @@ namespace Backend.API.Services
                 }
 
                 // TODO Add 2FA support
+                //
+
+                // TODO Add Email Verification
                 // if (!appUser.EmailConfirmed)
                 // {
                 //     _logger.LogWarning("Login failed: Email {Email} is not confirmed.", model.Email);
@@ -175,9 +178,9 @@ namespace Backend.API.Services
                 return OperationResult<TokenResponseDto?>.Success(new TokenResponseDto
                 {
                     Token = token,
-                    TokenExpiry = DateTime.UtcNow.AddMinutes(TokenExpiryTime),
+                    TokenExpiry = DateTime.UtcNow.AddMinutes(TokenExpiryTimeMin),
                     RefreshToken = refreshToken,
-                    RefreshTokenExpiry = DateTime.UtcNow.AddHours(RefreshTokenExpiryTime)
+                    RefreshTokenExpiry = DateTime.UtcNow.AddDays(RefreshTokenExpiryTimeDays)
                 });
             }
             catch (Exception ex)
@@ -229,9 +232,9 @@ namespace Backend.API.Services
             return OperationResult<TokenResponseDto?>.Success(new TokenResponseDto
             {
                 Token = token,
-                TokenExpiry = DateTime.UtcNow.AddMinutes(TokenExpiryTime),
+                TokenExpiry = DateTime.UtcNow.AddMinutes(TokenExpiryTimeMin),
                 RefreshToken = newRefreshToken,
-                RefreshTokenExpiry = DateTime.UtcNow.AddHours(RefreshTokenExpiryTime)
+                RefreshTokenExpiry = DateTime.UtcNow.AddHours(RefreshTokenExpiryTimeDays)
             });
         }
 
@@ -264,7 +267,7 @@ namespace Backend.API.Services
                 issuer: issuer,
                 audience: audience,
                 claims: claims,
-                expires: DateTime.UtcNow.AddMinutes(TokenExpiryTime),
+                expires: DateTime.UtcNow.AddMinutes(TokenExpiryTimeMin),
                 signingCredentials: creds
             );
 
@@ -274,12 +277,12 @@ namespace Backend.API.Services
         private async Task<string> GenerateRefreshToken(AppUser appUser)
         {
             appUser.RefreshToken = GenerateRandomStringB64();
-            appUser.RefreshTokenExpiryTime = DateTime.UtcNow.AddHours(RefreshTokenExpiryTime);
+            appUser.RefreshTokenExpiryTime = DateTime.UtcNow.AddHours(RefreshTokenExpiryTimeDays);
             await _userManager.UpdateAsync(appUser);
             return appUser.RefreshToken;
         }
 
-        private string GenerateRandomStringB64()
+        private static string GenerateRandomStringB64()
         {
             using var rng = RandomNumberGenerator.Create();
             var randomNumber = new byte[RefreshTokenLength];
