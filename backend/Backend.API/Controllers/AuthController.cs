@@ -33,19 +33,41 @@ namespace Backend.API.Controllers
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginModel model)
         {
-            var loginResult = await _authService.LoginAsync(model);
-            if (loginResult.Succeeded != true)
+            var clientIp = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown";
+            var loginResult = await _authService.LoginAsync(model, clientIp);
+            if (loginResult.Succeeded != true || loginResult.Data is null)
                 return BadRequest(loginResult.Error);
+
+            Response.Cookies.Append("refreshToken", loginResult.Data.RefreshToken, new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true, // only over HTTPS
+                SameSite = SameSiteMode.None, // cross-site (Next.js has a different domain)
+                Expires = loginResult.Data.RefreshTokenExpiry
+            });
 
             return Ok(loginResult.Data);
         }
 
         [HttpPost("refresh")]
-        public async Task<IActionResult> Refresh(RefreshRequestDto refreshRequest)
+        public async Task<IActionResult> Refresh()
         {
-            var refreshResult = await _authService.RefreshToken(refreshRequest);
-            if (refreshResult.Succeeded != true)
+            var clientIp = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown";
+            if (!Request.Cookies.TryGetValue("refreshToken", out var refreshToken) || string.IsNullOrEmpty(refreshToken))
+                return Unauthorized("Refresh token missing");
+
+
+            var refreshResult = await _authService.RefreshAccessToken(refreshToken, clientIp);
+            if (refreshResult.Succeeded != true || refreshResult.Data is null)
                 return BadRequest(refreshResult.Error);
+
+            Response.Cookies.Append("refreshToken", refreshResult.Data.RefreshToken, new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.None,
+                Expires = refreshResult.Data.RefreshTokenExpiry
+            });
 
             return Ok(refreshResult.Data);
         }

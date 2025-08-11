@@ -12,9 +12,5 @@ namespace Backend.API.Models
         [Required]
         [MaxLength(50)]
         public required string LastName { get; set; }
-
-        public string? RefreshToken { get; set; }
-
-        public DateTime? RefreshTokenExpiryTime { get; set; }
     }
 }

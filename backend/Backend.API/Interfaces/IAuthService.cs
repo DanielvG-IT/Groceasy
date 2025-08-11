@@ -27,7 +27,7 @@ namespace Backend.API.Interfaces
         /// A <see cref="Task"/> that represents the asynchronous operation, containing a <see cref="TokenResponseDto"/>
         /// if authentication is successful; otherwise, <c>null</c>.
         /// </returns>
-        Task<IOperationResult<TokenResponseDto?>> LoginAsync(LoginModel model);
+        Task<IOperationResult<TokenResponseDto?>> LoginAsync(LoginModel model, string clientIp);
 
         /// <summary>
         /// Refreshes the authentication token for the specified user using the provided refresh token.
@@ -37,6 +37,6 @@ namespace Backend.API.Interfaces
         /// <returns>
         /// A <see cref="TokenResponseDto"/> containing the new authentication token if the refresh is successful; otherwise, <c>null</c>.
         /// </returns>
-        Task<IOperationResult<TokenResponseDto?>> RefreshToken(RefreshRequestDto requestDto);
+        Task<IOperationResult<TokenResponseDto?>> RefreshAccessToken(string refreshToken, string clientIp);
     }
 }

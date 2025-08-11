@@ -8,6 +8,9 @@ using System.Text;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.IdentityModel.Tokens.Jwt;
+using Backend.API.Helpers;
+using Microsoft.EntityFrameworkCore;
+using Backend.API.Data;
 
 namespace Backend.API.Services
 {
@@ -15,11 +18,13 @@ namespace Backend.API.Services
         UserManager<AppUser> userManager,
         SignInManager<AppUser> signInManager,
         ILogger<AuthService> logger,
+        ApplicationDbContext dbContext,
         IConfiguration configuration) : IAuthService
     {
         private readonly UserManager<AppUser> _userManager = userManager;
         private readonly SignInManager<AppUser> _signInManager = signInManager;
         private readonly ILogger<AuthService> _logger = logger;
+        private readonly ApplicationDbContext _dbContext = dbContext;
         private readonly IConfiguration _configuration = configuration;
 
         private const int TokenExpiryTimeMin = 15;// 15 minutes
@@ -93,7 +98,7 @@ namespace Backend.API.Services
             }
         }
 
-        public async Task<IOperationResult<TokenResponseDto?>> LoginAsync(LoginModel model)
+        public async Task<IOperationResult<TokenResponseDto?>> LoginAsync(LoginModel model, string clientIp)
         {
             if (model is null)
             {
@@ -115,102 +120,45 @@ namespace Backend.API.Services
                 });
             }
 
-            try
+            var appUser = await _userManager.FindByEmailAsync(model.Email);
+            if (appUser is null)
             {
-                var result = await _signInManager.PasswordSignInAsync(model.Email, model.Password, model.RememberMe, false);
-                if (!result.Succeeded)
-                {
-                    _logger.LogWarning("Login failed: Invalid credentials for Email {Email}.", model.Email);
-                    return OperationResult<TokenResponseDto?>.Failed(new ApiErrorDto
-                    {
-                        Title = "Invalid credentials.",
-                        ErrorCode = "InvalidCredentials",
-                    });
-                }
-
-                var appUser = await _userManager.FindByEmailAsync(model.Email);
-                if (appUser is null)
-                {
-                    _logger.LogError("Login failed: User not found for Email {Email}.", model.Email);
-                    return OperationResult<TokenResponseDto?>.Failed(new ApiErrorDto
-                    {
-                        Title = "User not found.",
-                        ErrorCode = "UserNotFound",
-                    });
-                }
-
-                // TODO Add 2FA support
-                //
-
-                // TODO Add Email Verification
-                // if (!appUser.EmailConfirmed)
-                // {
-                //     _logger.LogWarning("Login failed: Email {Email} is not confirmed.", model.Email);
-                //     return OperationResult.Failed(new ApiErrorDto
-                //     {
-                //     Title = "Email is not confirmed.",
-                //     ErrorCode = "EmailNotConfirmed",
-                //     });
-                // }
-
-                var token = GenerateToken(appUser);
-                if (string.IsNullOrEmpty(token))
-                {
-                    _logger.LogError("Login failed: Token generation failed for Email {Email}.", model.Email);
-                    return OperationResult<TokenResponseDto?>.Failed(new ApiErrorDto
-                    {
-                        Title = "Token generation failed.",
-                        ErrorCode = "TokenGenerationFailed",
-                    });
-                }
-
-                var refreshToken = await GenerateRefreshToken(appUser);
-                if (string.IsNullOrEmpty(refreshToken))
-                {
-                    _logger.LogError("Login failed: Refresh token generation failed for Email {Email}.", model.Email);
-                    return OperationResult<TokenResponseDto?>.Failed(new ApiErrorDto
-                    {
-                        Title = "Refresh token generation failed.",
-                        ErrorCode = "RefreshTokenGenerationFailed",
-                    });
-                }
-
-                return OperationResult<TokenResponseDto?>.Success(new TokenResponseDto
-                {
-                    Token = token,
-                    TokenExpiry = DateTime.UtcNow.AddMinutes(TokenExpiryTimeMin),
-                    RefreshToken = refreshToken,
-                    RefreshTokenExpiry = DateTime.UtcNow.AddDays(RefreshTokenExpiryTimeDays)
-                });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "An unexpected error occurred during login.");
+                _logger.LogWarning("Login failed: User not found for Email {Email}.", model.Email);
                 return OperationResult<TokenResponseDto?>.Failed(new ApiErrorDto
                 {
-                    Title = "An unexpected error occurred. Please try again later.",
-                    ErrorCode = "UnexpectedError",
+                    Title = "Invalid credentials.",
+                    ErrorCode = "InvalidCredentials",
                 });
             }
-        }
 
-        public async Task<IOperationResult<TokenResponseDto?>> RefreshToken(RefreshRequestDto request)
-        {
-            var appUser = await _userManager.FindByIdAsync(request.UserId);
-            if (appUser is null || appUser.RefreshToken != request.RefreshToken || appUser.RefreshTokenExpiryTime <= DateTime.UtcNow)
+            var result = await _signInManager.CheckPasswordSignInAsync(appUser, model.Password, false);
+            if (!result.Succeeded)
             {
-                _logger.LogError("Refresh token failed: Invalid refresh token or user not found.");
+                _logger.LogWarning("Login failed: Invalid credentials for Email {Email}.", model.Email);
                 return OperationResult<TokenResponseDto?>.Failed(new ApiErrorDto
                 {
-                    Title = "Invalid refresh token or user not found.",
-                    ErrorCode = "InvalidRefreshToken",
+                    Title = "Invalid credentials.",
+                    ErrorCode = "InvalidCredentials",
                 });
             }
+
+            // TODO Add 2FA support
+
+            // TODO Add Email Verification
+            // if (!appUser.EmailConfirmed)
+            // {
+            //     _logger.LogWarning("Login failed: Email {Email} is not confirmed.", model.Email);
+            //     return OperationResult.Failed(new ApiErrorDto
+            //     {
+            //         Title = "Email is not confirmed.",
+            //         ErrorCode = "EmailNotConfirmed",
+            //     });
+            // }
 
             var token = GenerateToken(appUser);
             if (string.IsNullOrEmpty(token))
             {
-                _logger.LogError("Refresh token failed: Token generation failed for UserId {UserId}.", request.UserId);
+                _logger.LogError("Login failed: Token generation failed for Email {Email}.", model.Email);
                 return OperationResult<TokenResponseDto?>.Failed(new ApiErrorDto
                 {
                     Title = "Token generation failed.",
@@ -218,10 +166,10 @@ namespace Backend.API.Services
                 });
             }
 
-            var newRefreshToken = await GenerateRefreshToken(appUser);
-            if (string.IsNullOrEmpty(newRefreshToken))
+            var refreshToken = await CreateRefreshToken(appUser, clientIp);
+            if (string.IsNullOrEmpty(refreshToken))
             {
-                _logger.LogError("Refresh token failed: Refresh token generation failed for UserId {UserId}.", request.UserId);
+                _logger.LogError("Login failed: Refresh token generation failed for Email {Email}.", model.Email);
                 return OperationResult<TokenResponseDto?>.Failed(new ApiErrorDto
                 {
                     Title = "Refresh token generation failed.",
@@ -233,8 +181,89 @@ namespace Backend.API.Services
             {
                 Token = token,
                 TokenExpiry = DateTime.UtcNow.AddMinutes(TokenExpiryTimeMin),
-                RefreshToken = newRefreshToken,
-                RefreshTokenExpiry = DateTime.UtcNow.AddHours(RefreshTokenExpiryTimeDays)
+                RefreshToken = refreshToken,
+                RefreshTokenExpiry = DateTime.UtcNow.AddDays(RefreshTokenExpiryTimeDays)
+            });
+        }
+
+        public async Task<IOperationResult<TokenResponseDto?>> RefreshAccessToken(string refToken, string clientIp)
+        {
+            var refTokenHashed = TokenHelper.HashToken(refToken);
+            var existingToken = await _dbContext.RefreshTokens
+                .FirstOrDefaultAsync(rt => rt.TokenHash == refTokenHashed);
+
+            if (existingToken is null)
+            {
+                _logger.LogError("Refresh token failed: Invalid refresh token.");
+                return OperationResult<TokenResponseDto?>.Failed(new ApiErrorDto
+                {
+                    Title = "Invalid refresh token.",
+                    ErrorCode = "InvalidRefreshToken",
+                });
+            }
+
+            if (!existingToken.IsActive)
+            {
+                // If a revoked token is used, revoke ALL user's refresh tokens
+                await RevokeAllUserRefreshTokens(existingToken.UserId, clientIp, "Detected use of revoked token");
+                return OperationResult<TokenResponseDto?>.Failed(new ApiErrorDto
+                {
+                    Title = "Refresh token is no longer valid.",
+                    ErrorCode = "InvalidRefreshToken",
+                });
+            }
+
+            var appUser = await _userManager.FindByIdAsync(existingToken.UserId);
+            if (appUser is null)
+            {
+                return OperationResult<TokenResponseDto?>.Failed(new ApiErrorDto
+                {
+                    Title = "User not found.",
+                    ErrorCode = "UserNotFound",
+                });
+            }
+
+            // Revoke the current refresh token
+            existingToken.Revoked = DateTime.UtcNow;
+            existingToken.RevokedByIp = clientIp;
+
+            // Create new refresh token
+            var newRefreshTokenPlain = TokenHelper.RandomTokenUrlSafe(64);
+            var newRefreshTokenHash = TokenHelper.HashToken(newRefreshTokenPlain);
+
+            var newRefreshToken = new RefreshToken
+            {
+                UserId = appUser.Id,
+                TokenHash = newRefreshTokenHash,
+                Expires = DateTime.UtcNow.AddDays(RefreshTokenExpiryTimeDays),
+                Created = DateTime.UtcNow,
+                CreatedByIp = clientIp
+            };
+
+            existingToken.ReplacedByTokenHash = newRefreshTokenHash;
+
+            _dbContext.RefreshTokens.Add(newRefreshToken);
+            await _dbContext.SaveChangesAsync();
+
+            // Create new access token
+            var newAccessToken = GenerateToken(appUser);
+
+            if (string.IsNullOrEmpty(newAccessToken))
+            {
+                _logger.LogError("Failed to refresh access token: Token generation failed for UserId {UserId}.", appUser.Id);
+                return OperationResult<TokenResponseDto?>.Failed(new ApiErrorDto
+                {
+                    Title = "Token generation failed.",
+                    ErrorCode = "TokenGenerationFailed",
+                });
+            }
+
+            return OperationResult<TokenResponseDto?>.Success(new TokenResponseDto
+            {
+                Token = newAccessToken,
+                TokenExpiry = DateTime.UtcNow.AddMinutes(TokenExpiryTimeMin),
+                RefreshToken = newRefreshTokenPlain,
+                RefreshTokenExpiry = newRefreshToken.Expires
             });
         }
 
@@ -274,20 +303,42 @@ namespace Backend.API.Services
             return new JwtSecurityTokenHandler().WriteToken(tokenDescriptor);
         }
 
-        private async Task<string> GenerateRefreshToken(AppUser appUser)
+        private async Task<string> CreateRefreshToken(AppUser user, string createdByIp)
         {
-            appUser.RefreshToken = GenerateRandomStringB64();
-            appUser.RefreshTokenExpiryTime = DateTime.UtcNow.AddHours(RefreshTokenExpiryTimeDays);
-            await _userManager.UpdateAsync(appUser);
-            return appUser.RefreshToken;
+            var plain = TokenHelper.RandomTokenUrlSafe(64);
+            var hash = TokenHelper.HashToken(plain);
+
+            var refresh = new RefreshToken
+            {
+                UserId = user.Id,
+                TokenHash = hash,
+                Expires = DateTime.UtcNow.AddDays(7),
+                Created = DateTime.UtcNow,
+                CreatedByIp = createdByIp
+            };
+
+            _dbContext.RefreshTokens.Add(refresh);
+            await _dbContext.SaveChangesAsync();
+
+            return plain; // return plain to be sent to client (store only hash in DB)
         }
 
-        private static string GenerateRandomStringB64()
+        private async Task RevokeAllUserRefreshTokens(string userId, string revokedByIp, string reason)
         {
-            using var rng = RandomNumberGenerator.Create();
-            var randomNumber = new byte[RefreshTokenLength];
-            rng.GetBytes(randomNumber);
-            return Convert.ToBase64String(randomNumber);
+            var tokens = await _dbContext.RefreshTokens
+                .Where(rt => rt.UserId == userId && rt.IsActive)
+                .ToListAsync();
+
+            foreach (var token in tokens)
+            {
+                token.Revoked = DateTime.UtcNow;
+                token.RevokedByIp = revokedByIp;
+                token.ReplacedByTokenHash = null;
+            }
+
+            await _dbContext.SaveChangesAsync();
+
+            _logger.LogWarning("Revoked all refresh tokens for user {UserId}: {Reason}", userId, reason);
         }
     }
 }
