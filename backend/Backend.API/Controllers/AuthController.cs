@@ -38,11 +38,13 @@ namespace Backend.API.Controllers
             if (loginResult.Succeeded != true || loginResult.Data is null)
                 return BadRequest(loginResult.Error);
 
+            var isDevelopment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development";
+
             Response.Cookies.Append("refreshToken", loginResult.Data.RefreshToken, new CookieOptions
             {
                 HttpOnly = true,
-                Secure = true, // only over HTTPS
-                SameSite = SameSiteMode.None, // cross-site (Next.js has a different domain)
+                Secure = !isDevelopment, // only over HTTPS in non-development environments
+                SameSite = isDevelopment ? SameSiteMode.Lax : SameSiteMode.None, // stricter policy in production
                 Expires = loginResult.Data.RefreshTokenExpiry
             });
 
