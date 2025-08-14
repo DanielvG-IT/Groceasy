@@ -178,8 +178,8 @@ namespace Backend.API.Services
 
             return OperationResult<TokenResponseDto?>.Success(new TokenResponseDto
             {
-                Token = token,
-                TokenExpiry = DateTime.UtcNow.AddMinutes(TokenExpiryTimeMin),
+                AccessToken = token,
+                AccessTokenExpiry = DateTime.UtcNow.AddMinutes(TokenExpiryTimeMin),
                 RefreshToken = refreshToken,
                 RefreshTokenExpiry = DateTime.UtcNow.AddDays(RefreshTokenExpiryTimeDays)
             });
@@ -259,8 +259,8 @@ namespace Backend.API.Services
 
             return OperationResult<TokenResponseDto?>.Success(new TokenResponseDto
             {
-                Token = newAccessToken,
-                TokenExpiry = DateTime.UtcNow.AddMinutes(TokenExpiryTimeMin),
+                AccessToken = newAccessToken,
+                AccessTokenExpiry = DateTime.UtcNow.AddMinutes(TokenExpiryTimeMin),
                 RefreshToken = newRefreshTokenPlain,
                 RefreshTokenExpiry = newRefreshToken.Expires
             });

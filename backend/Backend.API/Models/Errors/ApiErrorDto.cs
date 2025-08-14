@@ -14,5 +14,4 @@ namespace Backend.API.Models.Errors
         /// </summary>
         public DateTimeOffset Timestamp { get; set; } = DateTimeOffset.UtcNow;
     }
-
 }
