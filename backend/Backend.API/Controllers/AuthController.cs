@@ -74,10 +74,37 @@ namespace Backend.API.Controllers
             return Ok(refreshResult.Data);
         }
 
-        // [HttpPost("logout")] // TODO How to invalidate users Jwt token?
-        // public async Task<IActionResult> Logout()
-        // {
-        //     throw new NotImplementedException();
-        // }
+        [HttpPost("logout")]
+        public async Task<IActionResult> Logout()
+        {
+            var clientIp = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown";
+            const string logoutReason = "User initiated logout";
+
+            if (Request.Cookies.TryGetValue("refreshToken", out var refreshToken) && !string.IsNullOrEmpty(refreshToken))
+            {
+                var logoutResult = await _authService.LogoutWithRefreshTokenAsync(refreshToken, clientIp, logoutReason);
+                if (logoutResult.Succeeded != true)
+                    return BadRequest(logoutResult.Error);
+
+                Response.Cookies.Delete("refreshToken");
+
+                return Ok("Logged out successfully");
+            }
+
+            if (Request.Headers.TryGetValue("Authorization", out var accessTokenHeader) && !string.IsNullOrEmpty(accessTokenHeader))
+            {
+                var accessToken = accessTokenHeader.ToString().Replace("Bearer ", string.Empty);
+                var logoutResult = await _authService.LogoutWithAccessTokenAsync(accessToken, clientIp, logoutReason);
+
+                if (logoutResult.Succeeded != true)
+                    return BadRequest(logoutResult.Error);
+
+                Response.Cookies.Delete("refreshToken");
+
+                return Ok("Logged out successfully");
+            }
+
+            return Unauthorized("No valid token provided");
+        }
     }
 }

@@ -38,5 +38,29 @@ namespace Backend.API.Interfaces
         /// A <see cref="TokenResponseDto"/> containing the new authentication token if the refresh is successful; otherwise, <c>null</c>.
         /// </returns>
         Task<IOperationResult<TokenResponseDto?>> RefreshAccessToken(string refreshToken, string clientIp);
+
+        /// <summary>
+        /// Logs out a user by invalidating the provided refresh token.
+        /// </summary>
+        /// <param name="refreshToken">The refresh token to be invalidated.</param>
+        /// <param name="requestIp">The IP address from which the logout request originated.</param>
+        /// <param name="reason">The reason for the logout.</param>
+        /// <returns>
+        /// A <see cref="Task"/> that represents the asynchronous operation, containing an <see cref="IOperationResult"/>
+        /// indicating the outcome of the logout operation.
+        /// </returns>
+        Task<IOperationResult> LogoutWithRefreshTokenAsync(string refreshToken, string requestIp, string reason);
+
+        /// <summary>
+        /// Logs out a user by invalidating the provided access token.
+        /// </summary>
+        /// <param name="accessToken">The access token to be invalidated.</param>
+        /// <param name="requestIp">The IP address from which the logout request originated.</param>
+        /// <param name="reason">The reason for the logout.</param>
+        /// <returns>
+        /// A <see cref="Task"/> that represents the asynchronous operation, containing an <see cref="IOperationResult"/>
+        /// indicating the outcome of the logout operation.
+        /// </returns>
+        Task<IOperationResult> LogoutWithAccessTokenAsync(string accessToken, string requestIp, string reason);
     }
 }

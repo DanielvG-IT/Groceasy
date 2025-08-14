@@ -1,16 +1,15 @@
+using Backend.API.Data;
 using Backend.API.Models;
+using Backend.API.Helpers;
 using Backend.API.Interfaces;
 using Backend.API.Models.Auth;
 using Backend.API.Models.Errors;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using System.Security.Claims;
-using System.Security.Cryptography;
 using System.IdentityModel.Tokens.Jwt;
-using Backend.API.Helpers;
-using Microsoft.EntityFrameworkCore;
-using Backend.API.Data;
 
 namespace Backend.API.Services
 {
@@ -321,6 +320,83 @@ namespace Backend.API.Services
             await _dbContext.SaveChangesAsync();
 
             return plain; // return plain to be sent to client (store only hash in DB)
+        }
+
+        public async Task<IOperationResult> LogoutWithRefreshTokenAsync(string refreshToken, string requestIp, string reason)
+        {
+            if (string.IsNullOrWhiteSpace(refreshToken))
+            {
+                _logger.LogError("Revoke failed: RefreshToken is null or empty.");
+                return OperationResult.Failed(new ApiErrorDto
+                {
+                    Title = "RefreshToken is required.",
+                    ErrorCode = "InvalidRefreshToken",
+                });
+            }
+
+            await RevokeToken(refreshToken, requestIp, reason);
+
+            return OperationResult.Success();
+        }
+
+        public async Task<IOperationResult> LogoutWithAccessTokenAsync(string accessToken, string requestIp, string reason)
+        {
+            if (string.IsNullOrWhiteSpace(accessToken))
+            {
+                _logger.LogError("Revoke failed: AccessToken is null or empty.");
+                return OperationResult.Failed(new ApiErrorDto
+                {
+                    Title = "AccessToken is required.",
+                    ErrorCode = "InvalidAccessToken",
+                });
+            }
+
+            var principal = TokenHelper.GetPrincipalFromExpiredToken(accessToken, _configuration);
+            if (principal is null)
+            {
+                _logger.LogError("Revoke failed: Invalid access token.");
+                return OperationResult.Failed(new ApiErrorDto
+                {
+                    Title = "Invalid access token.",
+                    ErrorCode = "InvalidAccessToken",
+                });
+            }
+
+            var userId = principal.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId))
+            {
+                _logger.LogError("Revoke failed: UserId not found in access token.");
+                return OperationResult.Failed(new ApiErrorDto
+                {
+                    Title = "UserId not found in access token.",
+                    ErrorCode = "UserIdNotFound",
+                });
+            }
+
+            await RevokeAllUserRefreshTokens(userId, requestIp, reason);
+
+            return OperationResult.Success();
+        }
+
+        private async Task RevokeToken(string refreshToken, string revokedByIp, string reason)
+        {
+            var hashedToken = TokenHelper.HashToken(refreshToken);
+            var token = await _dbContext.RefreshTokens
+            .FirstOrDefaultAsync(rt => rt.TokenHash == hashedToken && rt.IsActive);
+
+            if (token is null)
+            {
+                _logger.LogWarning("Attempted to revoke a non-existent or inactive refresh token.");
+                return;
+            }
+
+            token.Revoked = DateTime.UtcNow;
+            token.RevokedByIp = revokedByIp;
+            token.ReplacedByTokenHash = null;
+
+            await _dbContext.SaveChangesAsync();
+
+            _logger.LogInformation("Revoked refresh token for user {UserId}: {Reason}", token.UserId, reason);
         }
 
         private async Task RevokeAllUserRefreshTokens(string userId, string revokedByIp, string reason)
