@@ -2,13 +2,13 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { login } from "@/actions/user-actions";
-import { loginDto } from "@/models/auth";
+import { loginAction } from "@/actions/auth";
+import { loginDto } from "@/types/auth";
 
 const LoginPage = () => {
   const router = useRouter();
 
-  const [status, setStatus] = useState<string>("idle");
+  const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
   const [errorMessage, setError] = useState<string>("");
   const [successMessage, setSuccess] = useState<string>("");
 
@@ -21,15 +21,16 @@ const LoginPage = () => {
       password: formData.get("password") as string,
       rememberMe: false,
     };
-    login(data).then((result) => {
-      if (result?.errorMessage) {
-        setError(result.errorMessage);
-        setStatus("error");
-      } else if (result.successMessage) {
+    loginAction(data.email, data.password, data.rememberMe)
+      .then((result) => {
         setSuccess(result?.successMessage);
+        setStatus("idle");
         router.push("/dashboard");
-      }
-    });
+      })
+      .catch((error) => {
+        setError(error?.message || "An error occurred during login.");
+        setStatus("idle");
+      });
   };
 
   const redirectToRegister = () => {
@@ -72,7 +73,7 @@ const LoginPage = () => {
           {(status === "error" || errorMessage) && (
             <p className="mt-1 mb-1 text-sm text-red-500">{errorMessage}</p>
           )}
-          {(status === "success" || successMessage) && (
+          {successMessage && (
             <p className="mt-1 mb-1 text-sm text-green-500">{successMessage}</p>
           )}
           <button

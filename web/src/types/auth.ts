@@ -12,14 +12,9 @@ export interface registerDto {
   password: string;
 }
 
-export interface refreshRequestDto {
-  userId: string;
-  refreshToken: string;
-}
-
 export interface tokenResponseDto {
-  token: string;
-  tokenExpiry: Date;
+  accessToken: string;
+  accessTokenExpiry: Date;
   refreshToken: string;
   refreshTokenExpiry: Date;
 }

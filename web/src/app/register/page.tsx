@@ -1,10 +1,9 @@
 "use client";
 
 import React, { useState } from "react";
-import { useActionState } from "react";
 import { useRouter } from "next/navigation";
-import { register } from "@/actions/user-actions";
-import { registerDto, RegisterModel } from "@/models/auth";
+import { RegisterModel } from "@/types/auth";
+import { registerAction } from "@/actions/auth";
 
 const RegisterPage = () => {
   const router = useRouter();
@@ -27,15 +26,20 @@ const RegisterPage = () => {
       password: formData.get("password") as string,
       confirmPassword: formData.get("confirmPassword") as string,
     };
-    register(data).then((result) => {
-      if (result?.errorMessage) {
-        setError(result.errorMessage);
+    registerAction(data.firstName, data.lastName, data.email, data.password)
+      .then((result) => {
+        if (result?.errorMessage) {
+          setError(result.errorMessage);
+          setStatus("idle");
+        } else if (result?.successMessage) {
+          setSuccess(result?.successMessage);
+          router.push("/auth/login");
+        }
+      })
+      .catch((error) => {
+        setError(error?.message || "An error occurred during registration.");
         setStatus("idle");
-      } else if (result?.successMessage) {
-        setSuccess(result?.successMessage);
-        router.push("/auth/login");
-      }
-    });
+      });
   };
 
   const redirectToLogin = () => {
