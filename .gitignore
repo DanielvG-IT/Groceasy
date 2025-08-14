@@ -42,9 +42,9 @@ secrets.json
 ####################
 # Frontend (Next.js)
 ####################
-/frontend/.next/
-/frontend/node_modules/
-/frontend/out/
+.next/
+out/
+.next/cache/
 
 ####################
 # Mobile (React Native)
@@ -59,6 +59,7 @@ secrets.json
 /mobile/ios/*.xcworkspace
 /mobile/ios/Podfile.lock
 /mobile/ios/Podfile
+/mobile/expo-env.d.ts
 
 # Xcode files
 *.xcodeproj/*
@@ -78,6 +79,8 @@ yarn-error.log*
 ####################
 # Docker/Dokploy
 ####################
+docker-compose.yml
+docker-compose.yaml
 docker-compose.override.yml
 docker-compose.local.yml
 docker.env
