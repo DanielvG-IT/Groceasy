@@ -33,7 +33,7 @@ const RegisterPage = () => {
           setStatus("idle");
         } else if (result?.successMessage) {
           setSuccess(result?.successMessage);
-          router.push("/auth/login");
+          redirectToLogin();
         }
       })
       .catch((error) => {
@@ -43,7 +43,7 @@ const RegisterPage = () => {
   };
 
   const redirectToLogin = () => {
-    router.push("/auth/login");
+    router.push("/login");
   };
 
   return (

@@ -25,7 +25,7 @@ const LoginPage = () => {
       .then((result) => {
         setSuccess(result?.successMessage);
         setStatus("idle");
-        router.push("/dashboard");
+        router.push("/app");
       })
       .catch((error) => {
         setError(error?.message || "An error occurred during login.");
@@ -34,7 +34,7 @@ const LoginPage = () => {
   };
 
   const redirectToRegister = () => {
-    router.push("/auth/register");
+    router.push("/register");
   };
 
   return (
