@@ -3,13 +3,26 @@ import type { NextRequest } from "next/server";
 
 export function middleware(request: NextRequest) {
   const accessToken = request.cookies.get("accessToken")?.value;
+  const { pathname } = request.nextUrl;
 
-  // Only protect /app and its subroutes
-  if (request.nextUrl.pathname.startsWith("/app")) {
+  // Protect /app routes: redirect to login if not logged in
+  if (pathname.startsWith("/app")) {
     if (!accessToken) {
       const loginUrl = new URL("/login", request.url);
-      loginUrl.searchParams.set("from", request.nextUrl.pathname);
+      loginUrl.searchParams.set("from", pathname);
       return NextResponse.redirect(loginUrl);
+    }
+  }
+
+  // Prevent logged-in users from accessing /auth routes
+  if (
+    pathname.startsWith("/auth") ||
+    pathname === "/login" ||
+    pathname === "/register"
+  ) {
+    if (accessToken) {
+      // Redirect logged-in users to /app or dashboard
+      return NextResponse.redirect(new URL("/app", request.url));
     }
   }
 
@@ -17,5 +30,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/app/:path*"], // everything under /app
+  matcher: ["/app/:path*", "/auth/:path*", "/login", "/register"], // match /app and auth routes
 };
