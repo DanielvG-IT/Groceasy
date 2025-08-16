@@ -2,6 +2,9 @@
 
 import { cookies } from "next/headers";
 import { backendFetch } from "@/lib/fetcher";
+import { parseApiError } from "@/lib/error";
+import type { OperationResult } from "@/types/action";
+import { tokenResponseDto } from "@/types/auth";
 
 const ACCESS_TOKEN_COOKIE = "accessToken";
 
@@ -23,21 +26,18 @@ export async function registerAction(
   email: string,
   password: string
 ) {
-  const res = await backendFetch("/api/v1/auth/register", {
+  const res = await backendFetch("/auth/register", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     credentials: "include", // required for refreshToken cookie
-    body: JSON.stringify({ name, email, password }),
+    body: JSON.stringify({ firstName, lastName, email, password }),
   });
 
   if (!res.ok) {
-    const errorData = await res.json().catch(() => ({}));
-    throw new Error(errorData?.message || "Registration failed");
+    return { ok: false, error: await parseApiError(res) };
   }
 
-  const data = await res.json();
-  await setAccessToken(data.token);
-  return data;
+  return { ok: true }; // success, no data
 }
 
 export async function loginAction(
@@ -45,40 +45,48 @@ export async function loginAction(
   password: string,
   rememberMe: boolean
 ) {
-  const res = await backendFetch("/api/v1/auth/login", {
+  const res = await backendFetch("/auth/login", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     credentials: "include", // required for refreshToken cookie
     body: JSON.stringify({ email, password, rememberMe }),
   });
 
-  if (!res.ok) throw new Error("Invalid credentials");
+  if (!res.ok) {
+    return { ok: false, error: await parseApiError(res) };
+  }
 
-  const data = await res.json();
-  await setAccessToken(data.token);
-  return data;
+  const data = (await res.json()) as tokenResponseDto;
+  await setAccessToken(data.accessToken);
+  return { ok: true }; // success, no data
 }
 
-export async function logoutAction() {
-  await backendFetch("/api/v1/auth/logout", {
+export async function logoutAction(): Promise<OperationResult> {
+  const res = await backendFetch("/auth/logout", {
     method: "POST",
-    credentials: "include",
-  });
-  (await cookies()).delete(ACCESS_TOKEN_COOKIE);
-}
-
-export async function getProfileAction() {
-  const accessToken = (await cookies()).get(ACCESS_TOKEN_COOKIE)?.value;
-  if (!accessToken) throw new Error("Not authenticated");
-
-  const res = await backendFetch("/api/v1/user/profile", {
-    headers: { Authorization: `Bearer ${accessToken}` },
     credentials: "include",
   });
 
   if (!res.ok) {
-    throw new Error("Failed to fetch profile");
+    return { ok: false, error: await parseApiError(res) };
   }
 
-  return res.json();
+  (await cookies()).delete("accessToken");
+  return { ok: true }; // success, no data
 }
+
+// export async function getProfileAction() {
+//   const accessToken = (await cookies()).get(ACCESS_TOKEN_COOKIE)?.value;
+//   if (!accessToken) throw new Error("Not authenticated");
+
+//   const res = await backendFetch("/user/profile", {
+//     headers: { Authorization: `Bearer ${accessToken}` },
+//     credentials: "include",
+//   });
+
+//   if (!res.ok) {
+//     throw await parseApiError(res);
+//   }
+
+//   return res.json();
+// }

@@ -1,5 +1,6 @@
 export interface ApiErrorDto {
   title: string;
-  errorCode: string;
-  timestamp: Date;
+  status: number;
+  errorCode?: string;
+  timestamp?: string;
 }

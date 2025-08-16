@@ -13,11 +13,11 @@ const RegisterPage = () => {
   const [successMessage, setSuccess] = useState<string>("");
 
   const handleRegister = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
     setSuccess("");
     setError("");
-
-    e.preventDefault();
     setStatus("loading");
+
     const formData = new FormData(e.currentTarget);
     const data: RegisterModel = {
       firstName: formData.get("firstName") as string,
@@ -26,20 +26,24 @@ const RegisterPage = () => {
       password: formData.get("password") as string,
       confirmPassword: formData.get("confirmPassword") as string,
     };
-    registerAction(data.firstName, data.lastName, data.email, data.password)
-      .then((result) => {
-        if (result?.errorMessage) {
-          setError(result.errorMessage);
-          setStatus("idle");
-        } else if (result?.successMessage) {
-          setSuccess(result?.successMessage);
-          redirectToLogin();
-        }
-      })
-      .catch((error) => {
-        setError(error?.message || "An error occurred during registration.");
-        setStatus("idle");
-      });
+
+    const result = await registerAction(
+      data.firstName,
+      data.lastName,
+      data.email,
+      data.password
+    );
+
+    if (!result.ok) {
+      setError(result.error?.title ?? "Registration failed");
+      setStatus("idle");
+      return;
+    }
+
+    // Success
+    setSuccess("Registration successful! Redirecting to login...");
+    setStatus("idle");
+    redirectToLogin();
   };
 
   const redirectToLogin = () => {

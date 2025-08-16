@@ -14,23 +14,33 @@ const LoginPage = () => {
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setError("");
+    setSuccess("");
     setStatus("loading");
+
     const formData = new FormData(e.currentTarget);
     const data: loginDto = {
       email: formData.get("email") as string,
       password: formData.get("password") as string,
       rememberMe: false,
     };
-    loginAction(data.email, data.password, data.rememberMe)
-      .then((result) => {
-        setSuccess(result?.successMessage);
-        setStatus("idle");
-        router.push("/app");
-      })
-      .catch((error) => {
-        setError(error?.message || "An error occurred during login.");
-        setStatus("idle");
-      });
+
+    const result = await loginAction(
+      data.email,
+      data.password,
+      data.rememberMe
+    );
+
+    if (!result.ok) {
+      setError(result.error?.title ?? "Login failed");
+      setStatus("error");
+      return;
+    }
+
+    // Success
+    setSuccess("Login successful! Redirecting...");
+    setStatus("idle");
+    router.push("/app");
   };
 
   const redirectToRegister = () => {
