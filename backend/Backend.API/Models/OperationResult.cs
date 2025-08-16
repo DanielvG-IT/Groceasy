@@ -1,6 +1,7 @@
 using Backend.API.Interfaces;
+using Backend.API.Models.Errors;
 
-namespace Backend.API.Models.Errors
+namespace Backend.API.Models
 {
     /// <summary>
     /// Represents the result of an operation that can either succeed (optionally with data)
