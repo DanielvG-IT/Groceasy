@@ -18,7 +18,7 @@ export const metadata: Metadata = {
   description: "Groceasy - Simplify your grocery shopping experience.",
 };
 
-export default function LandingLayout({
+export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
