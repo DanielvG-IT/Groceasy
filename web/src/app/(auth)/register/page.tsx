@@ -1,9 +1,14 @@
 "use client";
 
+import Link from "next/link";
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { RegisterModel } from "@/types/auth";
 import { registerAction } from "@/actions/auth";
+
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 const RegisterPage = () => {
   const router = useRouter();
@@ -43,135 +48,79 @@ const RegisterPage = () => {
     // Success
     setSuccess("Registration successful! Redirecting to login...");
     setStatus("idle");
-    redirectToLogin();
-  };
-
-  const redirectToLogin = () => {
     router.push("/login");
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-100">
-      <div className="w-full max-w-md p-8 space-y-6 bg-white rounded shadow-md">
-        <h2 className="text-2xl font-bold text-center">Register</h2>
-        <form onSubmit={handleRegister} className="space-y-4">
-          <div>
-            <div>
-              <label
-                htmlFor="firstName"
-                className="block text-sm font-medium text-gray-700">
-                First Name
-              </label>
-              <input
-                type="text"
-                id="firstName"
-                name="firstName"
-                required
-                className="w-full px-3 py-2 mt-1 border rounded-md focus:outline-none focus:ring focus:ring-blue-300"
-              />
-            </div>
-            <div>
-              <label
-                htmlFor="lastName"
-                className="block text-sm font-medium text-gray-700">
-                Last Name
-              </label>
-              <input
-                type="text"
-                id="lastName"
-                name="lastName"
-                required
-                className="w-full px-3 py-2 mt-1 border rounded-md focus:outline-none focus:ring focus:ring-blue-300"
-              />
-            </div>
-            <label
-              htmlFor="email"
-              className="block text-sm font-medium text-gray-700">
-              Email
-            </label>
-            <input
-              type="email"
-              id="email"
-              name="email"
-              required
-              className="w-full px-3 py-2 mt-1 border rounded-md focus:outline-none focus:ring focus:ring-blue-300"
-            />
-          </div>
-          <div>
-            <label
-              htmlFor="password"
-              className="block text-sm font-medium text-gray-700">
-              Password
-            </label>
-            <input
-              type="password"
-              id="password"
-              name="password"
-              required
-              className="w-full px-3 py-2 mt-1 border rounded-md focus:outline-none focus:ring focus:ring-blue-300"
-            />
-          </div>
-          <div>
-            <label
-              htmlFor="confirmPassword"
-              className="block text-sm font-medium text-gray-700">
-              Confirm Password
-            </label>
-            <input
-              type="password"
-              id="confirmPassword"
-              name="confirmPassword"
-              required
-              className="w-full px-3 py-2 mt-1 border rounded-md focus:outline-none focus:ring focus:ring-blue-300"
-            />
-          </div>
-          {errorMessage && (
-            <p className="mt-1 mb-1 text-sm text-red-500">{errorMessage}</p>
-          )}
-          {successMessage && (
-            <p className="mt-1 mb-1 text-sm text-green-500">{successMessage}</p>
-          )}
-          <button
-            type="submit"
-            className={`w-full px-4 py-2 text-white bg-gradient-to-r from-blue-500 to-blue-600 rounded-md shadow-md hover:from-blue-600 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-300 ${
-              status === "loading" ? "opacity-50 cursor-not-allowed" : ""
-            }`}
-            disabled={status === "loading"}>
-            {status === "loading" ? (
-              <span className="flex items-center justify-center">
-                <svg
-                  className="w-5 h-5 mr-2 text-white animate-spin"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24">
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"></circle>
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
-                </svg>
-                Registering...
-              </span>
-            ) : (
-              "Register"
-            )}
-          </button>
-        </form>
-        <div className="text-center">
-          <button
-            onClick={redirectToLogin}
-            className="text-blue-500 hover:underline focus:outline-none">
-            Already have an account?
-          </button>
+    <form className="space-y-4" onSubmit={handleRegister}>
+      <div className="flex space-x-4">
+        <div className="flex-1">
+          <Label htmlFor="firstName" className="block mb-2">
+            First Name
+          </Label>
+          <Input id="firstName" placeholder="John" className="p-2" />
+        </div>
+        <div className="flex-1">
+          <Label htmlFor="lastName" className="block mb-2">
+            Last Name
+          </Label>
+          <Input id="lastName" placeholder="Doe" className="p-2" />
         </div>
       </div>
-    </div>
+      <div className="mt-4">
+        <Label htmlFor="email" className="block mb-2">
+          Email
+        </Label>
+        <Input
+          id="email"
+          type="email"
+          placeholder="you@example.com"
+          className="p-2"
+        />
+      </div>
+      <div className="mt-4">
+        <Label htmlFor="password" className="block mb-2">
+          Password
+        </Label>
+        <Input
+          id="password"
+          type="password"
+          placeholder="********"
+          className="p-2"
+        />
+      </div>
+      <div className="mt-4">
+        <Label htmlFor="confirm" className="block mb-2">
+          Confirm Password
+        </Label>
+        <Input
+          id="confirm"
+          type="password"
+          placeholder="********"
+          className="p-2"
+        />
+      </div>
+
+      {errorMessage && (
+        <p className="text-sm text-red-500 dark:text-red-400">{errorMessage}</p>
+      )}
+      {successMessage && (
+        <p className="text-sm text-green-500 dark:text-green-400">
+          {successMessage}
+        </p>
+      )}
+
+      <Button type="submit" className="w-full mt-2">
+        Register
+      </Button>
+
+      <p className="text-sm text-center text-gray-500 dark:text-gray-400 mt-4">
+        Already have an account?{" "}
+        <Link href="/login" className="text-blue-500 hover:underline">
+          Login
+        </Link>
+      </p>
+    </form>
   );
 };
 

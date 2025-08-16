@@ -1,9 +1,16 @@
 "use client";
 
-import React, { useState } from "react";
-import { useRouter } from "next/navigation";
 import { loginAction } from "@/actions/auth";
+import { useRouter } from "next/navigation";
 import { loginDto } from "@/types/auth";
+import React, { useState } from "react";
+import Link from "next/link";
+
+import { Checkbox } from "@/components/ui/checkbox";
+import { CardFooter } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 
 const LoginPage = () => {
   const router = useRouter();
@@ -22,7 +29,7 @@ const LoginPage = () => {
     const data: loginDto = {
       email: formData.get("email") as string,
       password: formData.get("password") as string,
-      rememberMe: false,
+      rememberMe: formData.get("rememberMe") === "on",
     };
 
     const result = await loginAction(
@@ -43,90 +50,93 @@ const LoginPage = () => {
     router.push("/app");
   };
 
-  const redirectToRegister = () => {
-    router.push("/register");
-  };
-
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-100">
-      <div className="w-full max-w-md p-8 space-y-6 bg-white rounded shadow-md">
-        <h2 className="text-2xl font-bold text-center">Login</h2>
-        <form onSubmit={handleLogin} className="space-y-4">
-          <div>
-            <label
-              htmlFor="email"
-              className="block text-sm font-medium text-gray-700">
-              Email
-            </label>
-            <input
-              type="email"
-              id="email"
-              name="email"
-              required
-              className="w-full px-3 py-2 mt-1 border rounded-md focus:outline-none focus:ring focus:ring-blue-300"
-            />
-          </div>
-          <div>
-            <label
-              htmlFor="password"
-              className="block text-sm font-medium text-gray-700">
-              Password
-            </label>
-            <input
-              type="password"
-              id="password"
-              name="password"
-              required
-              className="w-full px-3 py-2 mt-1 border rounded-md focus:outline-none focus:ring focus:ring-blue-300"
-            />
-          </div>
-          {(status === "error" || errorMessage) && (
-            <p className="mt-1 mb-1 text-sm text-red-500">{errorMessage}</p>
-          )}
-          {successMessage && (
-            <p className="mt-1 mb-1 text-sm text-green-500">{successMessage}</p>
-          )}
-          <button
-            type="submit"
-            className={`w-full px-4 py-2 text-white bg-gradient-to-r from-blue-500 to-blue-600 rounded-md shadow-md hover:from-blue-600 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-300 ${
-              status === "loading" ? "opacity-50 cursor-not-allowed" : ""
-            }`}
-            disabled={status === "loading"}>
-            {status === "loading" ? (
-              <span className="flex items-center justify-center">
-                <svg
-                  className="w-5 h-5 mr-2 text-white animate-spin"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24">
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"></circle>
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
-                </svg>
-                Logging in...
-              </span>
-            ) : (
-              "Login"
-            )}
-          </button>
-        </form>
-        <div className="text-center">
-          <button
-            onClick={redirectToRegister}
-            className="text-blue-500 hover:underline focus:outline-none">
-            Haven't got an account yet?
-          </button>
-        </div>
+    <form className="space-y-4" onSubmit={handleLogin}>
+      {/* Email Field */}
+      <div className="">
+        <Label htmlFor="email" className="block mb-2">
+          Email
+        </Label>
+        <Input
+          id="email"
+          name="email"
+          type="email"
+          placeholder="you@example.com"
+          className="transition duration-150 focus:ring-2 focus:ring-blue-400"
+          required
+        />
       </div>
-    </div>
+
+      {/* Password Field */}
+      <div className="mt-4">
+        <Label htmlFor="password" className="block mb-2">
+          Password
+        </Label>
+        <Input
+          id="password"
+          name="password"
+          type="password"
+          placeholder="********"
+          className="transition duration-150 focus:ring-2 focus:ring-blue-400"
+          required
+        />
+      </div>
+
+      {/* Remember Me + Forgot Password */}
+      <div className="flex items-center justify-between mt-4">
+        <div className="flex items-center space-x-2">
+          <Checkbox id="remember" name="rememberMe" />
+          <Label htmlFor="remember" className="text-sm">
+            Remember Me
+          </Label>
+        </div>
+        <Link
+          href="/forgot-password"
+          className="text-sm text-blue-500 hover:underline">
+          Forgot Password?
+        </Link>
+      </div>
+
+      {/* Error Message */}
+      {status === "error" && errorMessage && (
+        <p className="text-sm text-red-500">{errorMessage}</p>
+      )}
+
+      {/* Success Message */}
+      {successMessage && (
+        <p className="text-sm text-green-500">{successMessage}</p>
+      )}
+
+      {/* Login Button */}
+      <Button
+        type="submit"
+        className="w-full mt-2"
+        disabled={status === "loading"}>
+        {status === "loading" ? "Logging in..." : "Login"}
+      </Button>
+
+      {/* Optional social login buttons */}
+      {/* 
+      <div className="flex gap-2 justify-center mt-4">
+      <Button variant="outline" className="flex-1">
+        Login with Google
+      </Button>
+      <Button variant="outline" className="flex-1">
+        Login with GitHub
+      </Button>
+      </div> 
+      */}
+
+      {/* Switch to Register */}
+      <CardFooter className="pt-4 text-center">
+        <p className="text-sm text-gray-500 dark:text-gray-400">
+          Don’t have an account?{" "}
+          <Link href="/register" className="text-blue-500 hover:underline">
+            Register
+          </Link>
+        </p>
+      </CardFooter>
+    </form>
   );
 };
 
