@@ -1,6 +1,7 @@
 import { Card } from "@/components/ui/card";
 import React, { ReactNode } from "react";
 import { cn } from "@/lib/utils";
+import "@/app/globals.css";
 
 interface AuthLayoutProps {
   children: ReactNode;
