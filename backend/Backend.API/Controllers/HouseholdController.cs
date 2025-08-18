@@ -9,7 +9,7 @@ using Backend.API.Models.Dto;
 namespace Backend.API.Controllers
 {
     [ApiController]
-    [Route("api/v1/[controller]")]
+    [Route("api/v1/household")]
     [Authorize] // Require authentication
     public class HouseholdController(ApplicationDbContext context, UserManager<AppUser> userManager) : ControllerBase
     {
@@ -55,8 +55,8 @@ namespace Backend.API.Controllers
                 .Include(uh => uh.Household)
                 .Select(uh => new
                 {
-                    uh.Household.Id,
-                    uh.Household.Name,
+                    uh.HouseholdId,
+                    HouseholdName = uh.Household != null ? uh.Household.Name : null,
                     Role = uh.Role.ToString()
                 })
                 .ToListAsync();
