@@ -23,7 +23,7 @@ export async function backendFetch(
   input: string,
   init: RequestInit = {},
   retry = true
-) {
+): Promise<Response> {
   console.log(`Sending request to: ${BACKEND_URL}${input}`);
   let token = (await cookies()).get(ACCESS_TOKEN_COOKIE)?.value;
 
@@ -35,7 +35,16 @@ export async function backendFetch(
 
   init.credentials = "include"; // send refreshToken cookie automatically
 
-  let res = await fetch(`${BACKEND_URL}${input}`, init);
+  let res: Response;
+  try {
+    res = await fetch(`${BACKEND_URL}${input}`, init);
+  } catch (error) {
+    console.error("Network error occurred:", error);
+    return new Response(null, {
+      status: 500,
+      statusText: "Internal Server Error",
+    });
+  }
 
   // If token expired → try refresh once
   if (res.status === 401 && retry) {
@@ -46,7 +55,7 @@ export async function backendFetch(
 
     if (!refreshRes.ok) {
       (await cookies()).delete(ACCESS_TOKEN_COOKIE);
-      throw new Error("Session expired");
+      return new Response(null, { status: 401, statusText: "Unauthorized" });
     }
 
     const refreshData = (await refreshRes.json()) as tokenResponseDto;
