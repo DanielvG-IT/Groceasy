@@ -43,10 +43,8 @@ namespace Backend.API.Controllers
             if (!isMember)
                 return Forbid();
 
-            var item = await _context.ShoppingItems
-                .FirstOrDefaultAsync(i => i.Id == shoppingItemId && i.ShoppingListId == shoppingListId);
-
-            if (item == null)
+            var item = await _context.ShoppingItems.FirstOrDefaultAsync(i => i.Id == shoppingItemId && i.ShoppingListId == shoppingListId);
+            if (item is null)
                 return NotFound();
 
             return Ok(item);
@@ -88,9 +86,7 @@ namespace Backend.API.Controllers
             if (!isMember)
                 return Forbid();
 
-            var userHousehold = await _context.UserHouseholds
-                .FirstOrDefaultAsync(uh => uh.UserId == userId && uh.HouseholdId == householdId);
-
+            var userHousehold = await _context.UserHouseholds.FirstOrDefaultAsync(uh => uh.UserId == userId && uh.HouseholdId == householdId);
             if (userHousehold is null || userHousehold.Role == HouseholdRole.Reader || userHousehold.Role == HouseholdRole.Shopper)
                 return Forbid();
 
