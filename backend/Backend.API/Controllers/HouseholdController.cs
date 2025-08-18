@@ -6,6 +6,12 @@ using Backend.API.Data;
 using Microsoft.AspNetCore.Identity;
 using Backend.API.Models.Dto;
 
+// TODO: Move logic to a service
+// TODO: Implement validation
+// TODO: Add error handling
+// TODO: Implement logging
+// TODO: Implement unit tests
+
 namespace Backend.API.Controllers
 {
     [ApiController]

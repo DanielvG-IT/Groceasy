@@ -6,6 +6,12 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims;
 
+// TODO: Move logic to a service
+// TODO: Implement validation
+// TODO: Add error handling
+// TODO: Implement logging
+// TODO: Implement unit tests
+
 namespace Backend.API.Controllers
 {
     [Route("api/v1/household/{householdId}/ShoppingList/{shoppingListId}/Items")]
