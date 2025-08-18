@@ -28,5 +28,11 @@ namespace Backend.API.Models
         public Guid StoreTagId { get; set; }
 
         public StoreTag? StoreTag { get; set; }
+
+        // New properties for ShoppingList
+        [ForeignKey(nameof(ShoppingList))]
+        public Guid ShoppingListId { get; set; }
+
+        public ShoppingList? ShoppingList { get; set; }
     }
 }

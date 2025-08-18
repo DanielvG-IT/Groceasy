@@ -26,6 +26,6 @@ namespace Backend.API.Models
         public Guid HouseholdId { get; set; }
 
         [Required]
-        public Household Household { get; set; } = new();
+        public Household? Household { get; set; } = new();
     }
 }

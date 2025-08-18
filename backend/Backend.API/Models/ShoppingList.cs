@@ -20,7 +20,7 @@ namespace Backend.API.Models
         public Guid HouseholdId { get; set; }
 
         [Required]
-        public Household Household { get; set; } = null!;
+        public Household? Household { get; set; } = null!;
 
         [Required]
         public ICollection<ShoppingItem> Items { get; set; } = [];
