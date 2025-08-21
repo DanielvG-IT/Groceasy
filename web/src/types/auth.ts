@@ -1,29 +1,29 @@
 // .NET Core
-export interface loginDto {
+export type loginDto = {
   email: string;
   password: string;
   rememberMe: boolean;
-}
+};
 
-export interface registerDto {
+export type registerDto = {
   firstName: string;
   lastName: string;
   email: string;
   password: string;
-}
+};
 
-export interface tokenResponseDto {
+export type tokenResponseDto = {
   accessToken: string;
   accessTokenExpiry: Date;
   refreshToken: string;
   refreshTokenExpiry: Date;
-}
+};
 
 // NextJS
-export interface RegisterModel {
+export type RegisterModel = {
   firstName: string;
   lastName: string;
   email: string;
   password: string;
   confirmPassword: string;
-}
+};
