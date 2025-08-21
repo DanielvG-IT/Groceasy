@@ -2,9 +2,9 @@
   "compilerOptions": {
     "target": "ES2017",
     "lib": ["dom", "dom.iterable", "esnext"],
-    "allowJs": true,
-    "skipLibCheck": true,
-    "strict": true,
+    "allowJs": false, // Disallow JavaScript files
+    "skipLibCheck": false, // Enable library type checking
+    "strict": true, // Enable all strict type-checking options
     "noEmit": true,
     "esModuleInterop": true,
     "module": "esnext",
@@ -20,7 +20,20 @@
     ],
     "paths": {
       "@/*": ["./src/*"]
-    }
+    },
+    // Additional strictness options
+    "noImplicitAny": true, // Raise error on variables with implicit 'any' type
+    "strictNullChecks": true, // Ensure null and undefined are handled explicitly
+    "strictFunctionTypes": true, // Check function parameter types strictly
+    "strictBindCallApply": true, // Check method binding, calls, and apply arguments strictly
+    "strictPropertyInitialization": true, // Ensure class properties are initialized
+    "noImplicitThis": true, // Raise error on 'this' with implicit 'any' type
+    "alwaysStrict": true, // Parse in strict mode and emit "use strict" for modules
+    "noUnusedLocals": true, // Report unused local variables
+    "noUnusedParameters": true, // Report unused function parameters
+    "noFallthroughCasesInSwitch": true, // Prevent fallthrough in switch statements
+    "noImplicitReturns": true, // Ensure all code paths return a value
+    "checkJs": false // Disable type checking for JavaScript files
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
   "exclude": ["node_modules"]
