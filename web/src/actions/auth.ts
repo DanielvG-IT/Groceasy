@@ -8,7 +8,7 @@ import { tokenResponseDto } from "@/types/auth";
 
 const ACCESS_TOKEN_COOKIE = "accessToken";
 
-async function setAccessToken(token: string) {
+async function setAccessToken(token: string): Promise<void> {
   (await cookies()).set({
     name: ACCESS_TOKEN_COOKIE,
     value: token,
@@ -25,7 +25,7 @@ export async function registerAction(
   lastName: string,
   email: string,
   password: string
-) {
+): Promise<OperationResult> {
   const res = await backendFetch("/auth/register", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -44,7 +44,7 @@ export async function loginAction(
   email: string,
   password: string,
   rememberMe: boolean
-) {
+): Promise<OperationResult> {
   const res = await backendFetch("/auth/login", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
