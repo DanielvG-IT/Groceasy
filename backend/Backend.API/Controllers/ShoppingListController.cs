@@ -24,15 +24,9 @@ namespace Backend.API.Controllers
 
         // ✅ GET all shopping lists in a household
         [HttpGet]
+        [Authorize("BeMember")]
         public async Task<ActionResult<IEnumerable<ShoppingList>>> GetShoppingLists(Guid householdId)
         {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
-            // Check membership
-            var isMember = await _context.UserHouseholds.AnyAsync(uh => uh.UserId == userId && uh.HouseholdId == householdId);
-            if (!isMember)
-                return Forbid();
-
             var lists = await _context.ShoppingLists
                 .Where(l => l.HouseholdId == householdId)
                 .ToListAsync();
@@ -42,16 +36,14 @@ namespace Backend.API.Controllers
 
         // ✅ GET a single shopping list
         [HttpGet("{shoppingListId}")]
+        [Authorize("BeMember")]
         public async Task<ActionResult<ShoppingList>> GetShoppingList(Guid householdId, Guid shoppingListId)
         {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
             var shoppingList = await _context.ShoppingLists
                 .Include(l => l.Items)
-                .FirstOrDefaultAsync(l => l.Id == shoppingListId && l.HouseholdId == householdId &&
-                                     l.Household != null && l.Household.Members.Any(m => m.UserId == userId));
+                .FirstOrDefaultAsync(l => l.Id == shoppingListId && l.HouseholdId == householdId && l.Household != null);
 
-            if (shoppingList == null)
+            if (shoppingList is null)
                 return NotFound();
 
             return Ok(shoppingList);
@@ -59,15 +51,12 @@ namespace Backend.API.Controllers
 
         // ✅ CREATE a shopping list
         [HttpPost]
+        [Authorize("RequireEditor")]
         public async Task<ActionResult<ShoppingList>> CreateShoppingList(Guid householdId, [FromBody] ShoppingList shoppingList)
         {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
-            var isMember = await _context.UserHouseholds.AnyAsync(uh => uh.UserId == userId && uh.HouseholdId == householdId);
-            if (!isMember)
-                return Forbid();
-
             shoppingList.HouseholdId = householdId;
+            shoppingList.CreatedAt = DateTime.UtcNow;
+
             _context.ShoppingLists.Add(shoppingList);
             await _context.SaveChangesAsync();
 
@@ -78,28 +67,18 @@ namespace Backend.API.Controllers
 
         // ✅ UPDATE a shopping list
         [HttpPut("{shoppingListId}")]
+        [Authorize("RequireEditor")]
         public async Task<IActionResult> UpdateShoppingList(Guid householdId, Guid shoppingListId, [FromBody] ShoppingList shoppingList)
         {
             if (shoppingListId != shoppingList.Id)
                 return BadRequest("Mismatched ID.");
 
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
-            var userRole = await _context.UserHouseholds
-                .Where(uh => uh.UserId == userId && uh.HouseholdId == householdId)
-                .Select(uh => uh.Role)
-                .FirstOrDefaultAsync();
-
-            if (userRole != HouseholdRole.Editor && userRole != HouseholdRole.Manager)
-                return Forbid();
-
-            var existingList = await _context.ShoppingLists
-                .FirstOrDefaultAsync(l => l.Id == shoppingListId && l.HouseholdId == householdId);
-
-            if (existingList == null)
+            var existingList = await _context.ShoppingLists.FirstOrDefaultAsync(l => l.Id == shoppingListId && l.HouseholdId == householdId);
+            if (existingList is null)
                 return NotFound();
 
             existingList.Name = shoppingList.Name;
+            existingList.CompletedAt = shoppingList.CompletedAt;
 
             _context.ShoppingLists.Update(existingList);
             await _context.SaveChangesAsync();
@@ -109,22 +88,11 @@ namespace Backend.API.Controllers
 
         // ✅ DELETE a shopping list
         [HttpDelete("{shoppingListId}")]
+        [Authorize("RequireEditor")]
         public async Task<IActionResult> DeleteShoppingList(Guid householdId, Guid shoppingListId)
         {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
-            var userRole = await _context.UserHouseholds
-                .Where(uh => uh.UserId == userId && uh.HouseholdId == householdId)
-                .Select(uh => uh.Role)
-                .FirstOrDefaultAsync();
-
-            if (userRole != HouseholdRole.Manager)
-                return Forbid();
-
-            var shoppingList = await _context.ShoppingLists
-                .FirstOrDefaultAsync(l => l.Id == shoppingListId && l.HouseholdId == householdId);
-
-            if (shoppingList == null)
+            var shoppingList = await _context.ShoppingLists.FirstOrDefaultAsync(l => l.Id == shoppingListId && l.HouseholdId == householdId);
+            if (shoppingList is null)
                 return NotFound();
 
             _context.ShoppingLists.Remove(shoppingList);
@@ -132,5 +100,7 @@ namespace Backend.API.Controllers
 
             return NoContent();
         }
+
+        // TODO Add Archive functionality
     }
 }

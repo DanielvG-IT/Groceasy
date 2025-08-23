@@ -266,6 +266,28 @@ namespace Backend.API.Services
             });
         }
 
+        public async Task<IOperationResult<AppUser?>> GetUserByIdAsync(string userId)
+        {
+            if (string.IsNullOrWhiteSpace(userId))
+                return OperationResult<AppUser?>.Failed(new ApiErrorDto
+                {
+                    Title = "UserId is required.",
+                    ErrorCode = "UserIdRequired",
+                });
+
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user is null)
+            {
+                return OperationResult<AppUser?>.Failed(new ApiErrorDto
+                {
+                    Title = "User not found.",
+                    ErrorCode = "UserNotFound",
+                });
+            }
+
+            return OperationResult<AppUser?>.Success(user);
+        }
+
         private string? GenerateToken(AppUser appUser)
         {
             if (appUser is null || string.IsNullOrEmpty(appUser.Email))

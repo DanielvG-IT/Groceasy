@@ -7,6 +7,8 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using System.Text;
+using Microsoft.AspNetCore.Authorization;
+using Backend.API.Handlers;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -57,7 +59,17 @@ builder.Services.AddAuthentication(x =>
     };
 });
 builder.Services.AddScoped<IAuthService, AuthService>();
-builder.Services.AddAuthorization();
+builder.Services.AddSingleton<IAuthorizationHandler, HouseholdRoleHandler>();
+builder.Services.AddAuthorizationBuilder()
+  .AddPolicy("BeMember", policy =>
+        policy.Requirements.Add(new HouseholdRoleRequirement(HouseholdRole.Reader)))
+  .AddPolicy("RequireShopper", policy =>
+        policy.Requirements.Add(new HouseholdRoleRequirement(HouseholdRole.Shopper)))
+  .AddPolicy("RequireEditor", policy =>
+        policy.Requirements.Add(new HouseholdRoleRequirement(HouseholdRole.Editor)))
+  .AddPolicy("RequireManager", policy =>
+        policy.Requirements.Add(new HouseholdRoleRequirement(HouseholdRole.Manager)));
+
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 builder.Services.AddCors(options =>

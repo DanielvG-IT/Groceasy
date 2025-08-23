@@ -3,6 +3,7 @@ using Backend.API.Models.Auth;
 using Backend.API.Models.Errors;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
 
 /// <summary>
 /// Controller responsible for authentication-related endpoints such as registration, login, and token refresh.
@@ -105,6 +106,20 @@ namespace Backend.API.Controllers
             }
 
             return Unauthorized("No valid token provided");
+        }
+
+        [HttpGet("me")]
+        public async Task<IActionResult> GetCurrentUser()
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId))
+                return Unauthorized("User not found");
+
+            var result = await _authService.GetUserByIdAsync(userId);
+            if (result.Data is null)
+                return NotFound(result.Error);
+
+            return Ok(result.Data);
         }
     }
 }

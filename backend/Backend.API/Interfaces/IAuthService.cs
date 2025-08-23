@@ -1,3 +1,4 @@
+using Backend.API.Models;
 using Backend.API.Models.Auth;
 using Backend.API.Models.Errors;
 using Microsoft.AspNetCore.Identity;
@@ -62,5 +63,15 @@ namespace Backend.API.Interfaces
         /// indicating the outcome of the logout operation.
         /// </returns>
         Task<IOperationResult> LogoutWithAccessTokenAsync(string accessToken, string requestIp, string reason);
+
+        /// <summary>
+        /// Retrieves a user by their unique identifier.
+        /// </summary>
+        /// <param name="userId">The unique identifier of the user to retrieve.</param>
+        /// <returns>
+        /// A <see cref="Task"/> that represents the asynchronous operation, containing an <see cref="AppUser"/>
+        /// if the user is found; otherwise, <c>null</c>.
+        /// </returns>
+        Task<IOperationResult<AppUser?>> GetUserByIdAsync(string userId);
     }
 }

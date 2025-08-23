@@ -30,78 +30,62 @@ namespace Backend.API.Controllers
             if (user is null)
                 return Unauthorized("User not found.");
 
-            var household = new Household { Name = dto.Name };
+            if (user.HouseholdId is not null)
+                return BadRequest("User already belongs to a household.");
+
+            if (string.IsNullOrWhiteSpace(dto.Name))
+                return BadRequest("Household name is required.");
+
+            var household = new Household { Id = Guid.NewGuid(), Name = dto.Name };
             _context.Households.Add(household);
             await _context.SaveChangesAsync();
 
             // Link creator as Manager
-            _context.UserHouseholds.Add(new UserHousehold
-            {
-                UserId = user.Id,
-                HouseholdId = household.Id,
-                Role = HouseholdRole.Manager,
-                User = user,
-                Household = household
-            });
+            user.HouseholdId = household.Id;
+            user.Role = HouseholdRole.Manager; // Set role to Manager
+
+            _context.Users.Update(user); // optional, EF is already tracking `user`
             await _context.SaveChangesAsync();
 
             return Ok(household);
         }
 
-        // Get households for logged-in user
+        // Get household for logged-in user
         [HttpGet]
-        public async Task<IActionResult> GetUserHouseholds()
+        public async Task<IActionResult> GetUserHousehold()
         {
             var user = await _userManager.GetUserAsync(User);
             if (user is null)
                 return Unauthorized("User not found.");
 
-            var households = await _context.UserHouseholds
-                .Where(uh => uh.UserId == user.Id)
-                .Include(uh => uh.Household)
-                .Select(uh => new
-                {
-                    uh.HouseholdId,
-                    HouseholdName = uh.Household != null ? uh.Household.Name : null,
-                    Role = uh.Role.ToString()
-                })
-                .ToListAsync();
+            var households = await _context.Households.FirstOrDefaultAsync(h => h.Id == user.HouseholdId);
+            if (households is null)
+                return NotFound("Household not found.");
 
             return Ok(households);
         }
 
         // Add member
         [HttpPost("{householdId}/members")]
+        [Authorize("RequireManager")]
         public async Task<IActionResult> AddMember(Guid householdId, [FromBody] AddMemberDto dto)
         {
             var currentUser = await _userManager.GetUserAsync(User);
             if (currentUser is null)
                 return Unauthorized("User not found.");
 
-            // Check role of current user in household
-            var membership = await _context.UserHouseholds
-                .FirstOrDefaultAsync(uh => uh.UserId == currentUser.Id && uh.HouseholdId == householdId);
-
-            if (membership is null || membership.Role == HouseholdRole.Reader || membership.Role == HouseholdRole.Shopper || membership.Role == HouseholdRole.Editor)
-                return Forbid(); // Only Owner/Admin can invite
-
-            if (await _context.UserHouseholds.AnyAsync(uh => uh.UserId == dto.UserId && uh.HouseholdId == householdId))
+            if (await _context.Users.AnyAsync(uh => uh.Id == dto.UserId && uh.HouseholdId == householdId))
                 return BadRequest("User already in household.");
 
-            var user = await _userManager.FindByIdAsync(dto.UserId);
+            var newUser = await _userManager.FindByIdAsync(dto.UserId);
             var household = await _context.Households.FindAsync(householdId);
 
-            if (user is null || household is null)
+            if (newUser is null || household is null)
                 return NotFound("User or Household not found.");
 
-            _context.UserHouseholds.Add(new UserHousehold
-            {
-                UserId = user.Id,
-                HouseholdId = householdId,
-                Role = Enum.TryParse(dto.Role, out HouseholdRole parsedRole) ? parsedRole : HouseholdRole.Reader,
-                User = user,
-                Household = household
-            });
+            newUser.HouseholdId = householdId;
+            newUser.Role = dto.Role;
+            _context.Users.Update(newUser); // optional, EF is already tracking `newUser`
             await _context.SaveChangesAsync();
 
             return Ok("User added to household.");
@@ -109,24 +93,21 @@ namespace Backend.API.Controllers
 
         // Remove member
         [HttpDelete("{householdId}/members/{userId}")]
+        [Authorize("RequireManager")]
         public async Task<IActionResult> RemoveMember(Guid householdId, string userId)
         {
             var currentUser = await _userManager.GetUserAsync(User);
             if (currentUser is null)
                 return Unauthorized("User not found.");
 
-            var membership = await _context.UserHouseholds
-                .FirstOrDefaultAsync(uh => uh.UserId == currentUser.Id && uh.HouseholdId == householdId);
+            var member = await _context.Users.FirstOrDefaultAsync(uh => uh.Id == userId && uh.HouseholdId == householdId);
+            if (member is null)
+                return NotFound();
 
-            if (membership is null || membership.Role == HouseholdRole.Reader || membership.Role == HouseholdRole.Shopper || membership.Role == HouseholdRole.Editor)
-                return Forbid();
+            member.HouseholdId = null;
+            member.Role = HouseholdRole.Reader;
 
-            var member = await _context.UserHouseholds
-                .FirstOrDefaultAsync(uh => uh.UserId == userId && uh.HouseholdId == householdId);
-
-            if (member is null) return NotFound();
-
-            _context.UserHouseholds.Remove(member);
+            _context.Users.Update(member); // optional, EF is already tracking `member`
             await _context.SaveChangesAsync();
 
             return Ok("Member removed.");

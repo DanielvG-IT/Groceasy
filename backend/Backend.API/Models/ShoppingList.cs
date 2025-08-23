@@ -19,10 +19,8 @@ namespace Backend.API.Models
         [ForeignKey(nameof(Household))]
         public Guid HouseholdId { get; set; }
 
-        [Required]
         public Household? Household { get; set; } = null!;
 
-        [Required]
         public ICollection<ShoppingItem> Items { get; set; } = [];
     }
 }
