@@ -36,4 +36,18 @@ namespace Backend.API.Models
     {
         public HouseholdRole MinimumRole { get; } = minimumRole;
     }
+
+    public class CurrentUserDto
+    {
+        public string Id { get; set; } = default!;
+        public string Email { get; set; } = default!;
+        public string FirstName { get; set; } = default!;
+        public string LastName { get; set; } = default!;
+
+        // For now, single household
+        public Guid? HouseholdId { get; set; }
+        public string? HouseholdName { get; set; }
+        public HouseholdRole? Role { get; set; }
+    }
+
 }

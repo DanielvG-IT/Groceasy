@@ -1,188 +1,91 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import {
-  createHouseholdAction,
-  getHouseholdsAction,
-} from "@/actions/household";
-import {
-  CreateHouseholdModal,
-  // EditHouseholdModal,
-} from "@/components/household/houseHoldModal";
-import { Badge } from "@/components/ui/badge";
+import React, { useEffect, useState } from "react";
+import { createHouseholdAction, getHouseholdAction } from "@/actions/household";
+import { Household } from "@/types/household";
+import { OperationResult } from "@/types/action";
 
-const NoHouseholds = () => {
-  return (
-    <div className="text-gray-700">
-      <p className="text-sm text-gray-500">
-        You don't have any households yet. Create your first household to get
-        started.
-      </p>
-    </div>
-  );
+const handleHousehold = async (): Promise<Household | null> => {
+  try {
+    const data: OperationResult<Household> = await getHouseholdAction();
+
+    if ("error" in data && data.error) {
+      if (data.error.status === 404) {
+        // TODO: Give user modal to create or join a household
+      }
+      console.error("Household not found");
+      return null;
+    }
+
+    if (!data.ok) {
+      console.error("Failed to fetch household:", data.error);
+      return null;
+    }
+
+    if ("data" in data) {
+      return data.data;
+    }
+
+    console.error("Unexpected response format");
+    return null;
+  } catch (error) {
+    console.error("An error occurred while fetching the household:", error);
+    return null;
+  }
 };
 
-const HouseholdsList = () => {
-  const [loading, setLoading] = useState(true);
-  const [households, setHouseholds] = useState<any[] | null>(null);
-  const [error, setError] = useState<any | null>(null);
+const handleCreateHousehold = (
+  name: string,
+  setHouseholds: React.Dispatch<React.SetStateAction<Household | null>>
+) => {
+  createHouseholdAction({ Name: name })
+    .then(async (result) => {
+      if (result.ok && "data" in result) {
+        const newHousehold = result.data;
+        setHouseholds(newHousehold);
+      } else {
+        if (!result.ok && "error" in result) {
+          console.error("Failed to create household:", result.error);
+        }
+      }
+    })
+    .catch((error) => {
+      console.error("An error occurred while creating the household:", error);
+    });
+};
+
+const AppPage = () => {
+  const [households, setHouseholds] = useState<Household | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
-    let mounted = true;
-    setLoading(true);
-
-    getHouseholdsAction()
-      .then((res) => {
-        if (!mounted) return;
-        if (!res.ok) {
-          setError(res.error ?? { title: "Unknown error" });
-          setHouseholds(null);
-          return;
-        }
-
-        if (!("data" in res) || !Array.isArray(res.data)) {
-          setHouseholds([]);
-          return;
-        }
-
-        setHouseholds(res.data);
-      })
-      .catch((e) => {
-        if (!mounted) return;
-        setError({ title: String(e) });
-        setHouseholds(null);
-      })
-      .finally(() => {
-        if (!mounted) return;
-        setLoading(false);
-      });
-
-    return () => {
-      mounted = false;
+    const fetchHousehold = async () => {
+      setLoading(true);
+      const data = await handleHousehold();
+      setHouseholds(data);
+      setLoading(false);
     };
+
+    fetchHousehold();
   }, []);
 
   if (loading) {
-    return (
-      <>
-        {Array.from({ length: 1 }).map((_, i) => (
-          <div
-            key={i}
-            className="bg-white rounded-2xl shadow p-4 flex flex-col justify-between"
-            aria-hidden="true">
-            <div className="space-y-3">
-              <div className="h-6 bg-gray-200 rounded w-3/4 animate-pulse" />
-              <div className="h-4 bg-gray-200 rounded w-1/2 animate-pulse" />
-            </div>
+    return <div>Loading...</div>;
+  }
 
-            <div className="mt-4 flex items-center justify-between">
-              <div className="h-10 bg-gray-200 rounded-full w-2/3 animate-pulse" />
-              <div className="ml-3 h-10 w-10 bg-gray-200 rounded-full animate-pulse" />
-            </div>
-          </div>
-        ))}
-      </>
+  if (!households) {
+    return (
+      <div>
+        <p>No household data available.</p>
+        <button
+          onClick={() => handleCreateHousehold("New Household", setHouseholds)}>
+          Create Household
+        </button>
+      </div>
     );
   }
 
-  if (!households || households.length === 0) {
-    if (error && error?.status === 404) {
-      return <NoHouseholds />;
-    }
-    if (error) {
-      return (
-        <div className="text-red-600">
-          Failed to load households: {String(error?.title ?? "Unknown error")}
-        </div>
-      );
-    }
-    return <NoHouseholds />;
-  }
-
-  return (
-    <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-      {households.length > 0 ? (
-        households.map((h) => (
-          <div
-            key={h.householdId}
-            className="bg-white rounded-2xl shadow p-4 flex flex-col justify-between hover:shadow-md transition">
-            <div>
-              <h3 className="text-2xl font-extrabold mb-3 text-blue-800">
-                {h.householdName}
-              </h3>
-              <p className="text-gray-600 text-sm mb-2">{h.householdId}</p>
-              <Badge
-                variant="secondary"
-                className="text-sm px-3 py-1 rounded-full bg-blue-100 text-blue-600 border border-blue-300 shadow-sm">
-                {h.role ?? "Unknown"}
-              </Badge>
-            </div>
-          </div>
-        ))
-      ) : (
-        <div className="text-gray-500">No households found.</div>
-      )}
-    </div>
-  );
+  return <div>{JSON.stringify(households)}</div>;
 };
 
-export default function Dashboard() {
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const router = useRouter();
-
-  return (
-    <div className="min-h-screen bg-gray-100">
-      {/* Content */}
-      <div className="p-6">
-        <h2 className="text-lg font-semibold mb-4">Your Households</h2>
-        <div
-          role="status"
-          aria-live="polite"
-          className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-          <Suspense
-            fallback={
-              <div
-                className="bg-white rounded-2xl shadow p-4 flex flex-col justify-between"
-                aria-hidden="true">
-                <div className="space-y-3">
-                  <div className="h-6 bg-gray-200 rounded w-3/4 animate-pulse" />
-                  <div className="h-4 bg-gray-200 rounded w-1/2 animate-pulse" />
-                </div>
-
-                <div className="mt-4 flex items-center justify-between">
-                  <div className="h-10 bg-gray-200 rounded-full w-2/3 animate-pulse" />
-                  <div className="ml-3 h-10 w-10 bg-gray-200 rounded-full animate-pulse" />
-                </div>
-              </div>
-            }>
-            {/* This will render/loading on the client */}
-            <HouseholdsList />
-          </Suspense>
-
-          {/* Floating Action Button */}
-          <CreateHouseholdModal
-            onCreate={async (name: string) => {
-              try {
-                await createHouseholdAction({ Name: name });
-              } catch (e) {
-                console.error("Failed to create household", e);
-              } finally {
-                setIsCreateModalOpen(false);
-                router.refresh();
-              }
-            }}
-            open={isCreateModalOpen}
-            onClose={() => setIsCreateModalOpen(false)}
-          />
-          <button
-            onClick={() => setIsCreateModalOpen(true)}
-            className="fixed bottom-6 right-6 bg-blue-600 text-white w-14 h-14 rounded-full shadow-lg flex items-center justify-center text-2xl hover:bg-blue-700 transition"
-            aria-label="Create household">
-            +
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
+export default AppPage;

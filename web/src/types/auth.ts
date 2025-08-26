@@ -27,3 +27,13 @@ export type RegisterModel = {
   password: string;
   confirmPassword: string;
 };
+
+export interface CurrentUserDto {
+  id: string; // Guid
+  email: string;
+  firstName: string;
+  lastName: string;
+  householdId: string; // Guid
+  householdName: string;
+  role: "Manager" | "Editor" | "Shopper" | "Reader";
+}

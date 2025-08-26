@@ -3,11 +3,11 @@
 import { parseApiError } from "@/lib/error";
 import { backendFetch } from "@/lib/fetcher";
 import { OperationResult } from "@/types/action";
-import { createHouseholdDto, UserHousehold } from "@/types/household";
+import { createHouseholdDto, Household } from "@/types/household";
 
 export const createHouseholdAction = async (
   data: createHouseholdDto
-): Promise<OperationResult> => {
+): Promise<OperationResult<Household>> => {
   const res = await backendFetch("/household", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -19,11 +19,12 @@ export const createHouseholdAction = async (
     return { ok: false, error: await parseApiError(res) };
   }
 
-  return { ok: true }; // success, no data
+  const resData: Household = await res.json();
+  return { ok: true, data: resData };
 };
 
-export const getHouseholdsAction = async (): Promise<
-  OperationResult<Array<UserHousehold>>
+export const getHouseholdAction = async (): Promise<
+  OperationResult<Household>
 > => {
   const res = await backendFetch("/household", {
     method: "GET",
@@ -35,6 +36,6 @@ export const getHouseholdsAction = async (): Promise<
     return { ok: false, error: await parseApiError(res) };
   }
 
-  const respData: Array<UserHousehold> = await res.json();
-  return { ok: true, data: respData };
+  const resData: Household = await res.json();
+  return { ok: true, data: resData };
 };

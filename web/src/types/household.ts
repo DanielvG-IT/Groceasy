@@ -4,14 +4,6 @@ export type createHouseholdDto = {
   Name: string;
 };
 
-export type UserHousehold = {
-  userId: string;
-  user?: AppUser;
-  householdId: UUID;
-  household?: Household;
-  role: HouseholdRole;
-};
-
 export enum HouseholdRole {
   Reader,
   Shopper,
@@ -20,7 +12,7 @@ export enum HouseholdRole {
 }
 
 export type AppUser = {
-  id: string;
+  id: UUID;
   userName: string;
   email: string;
   firstName: string;
@@ -28,43 +20,42 @@ export type AppUser = {
 };
 
 export type Household = {
-  Id: string;
+  Id: UUID;
   Name: string;
-  Members?: UserHousehold[];
   ShoppingLists?: ShoppingList[];
 };
 
 export type ShoppingList = {
-  Id: string;
+  Id: UUID;
   Name: string;
   CreatedAt: string;
   CompletedAt?: string;
-  HouseholdId: string;
+  HouseholdId: UUID;
   Household?: Household;
   Items: ShoppingItem[];
 };
 
 export type ShoppingItem = {
-  Id: string;
+  Id: UUID;
   Name: string;
   Quantity: number;
   Notes?: string;
   CreatedAt: string;
   UpdatedAt?: string;
   Checked: boolean;
-  StoreTagId: string;
+  StoreTagId: UUID;
   StoreTag?: StoreTag;
-  ShoppingListId: string;
+  ShoppingListId: UUID;
   ShoppingList?: ShoppingList;
 };
 
 export type StoreTag = {
-  Id: string;
+  Id: UUID;
   Name: string;
   Description?: string;
   ColorHex: string;
   CreatedAt: string;
   UpdatedAt?: string;
-  HouseholdId: string;
+  HouseholdId: UUID;
   Household?: Household;
 };

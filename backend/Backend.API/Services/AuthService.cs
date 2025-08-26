@@ -13,22 +13,34 @@ using System.IdentityModel.Tokens.Jwt;
 
 namespace Backend.API.Services
 {
-    public class AuthService(
-        UserManager<AppUser> userManager,
-        SignInManager<AppUser> signInManager,
-        ILogger<AuthService> logger,
-        ApplicationDbContext dbContext,
-        IConfiguration configuration) : IAuthService
+    public class AuthService : IAuthService
     {
-        private readonly UserManager<AppUser> _userManager = userManager;
-        private readonly SignInManager<AppUser> _signInManager = signInManager;
-        private readonly ILogger<AuthService> _logger = logger;
-        private readonly ApplicationDbContext _dbContext = dbContext;
-        private readonly IConfiguration _configuration = configuration;
+        private readonly UserManager<AppUser> _userManager;
+        private readonly SignInManager<AppUser> _signInManager;
+        private readonly ILogger<AuthService> _logger;
+        private readonly ApplicationDbContext _dbContext;
+        private readonly IConfiguration _configuration;
+        private readonly string frontendUrl;
 
-        private const int TokenExpiryTimeMin = 15;// 15 minutes
+        private const int TokenExpiryTimeMin = 15; // 15 minutes
         private const int RefreshTokenExpiryTimeDays = 7; // 7 Days
         private const int RefreshTokenLength = 64;
+
+        public AuthService(
+            UserManager<AppUser> userManager,
+            SignInManager<AppUser> signInManager,
+            ILogger<AuthService> logger,
+            ApplicationDbContext dbContext,
+            IConfiguration configuration)
+        {
+            _userManager = userManager;
+            _signInManager = signInManager;
+            _logger = logger;
+            _dbContext = dbContext;
+            _configuration = configuration;
+
+            frontendUrl = _configuration.GetValue<string>("Settings:FrontendUrl") ?? "http://localhost:3000";
+        }
 
         public async Task<IOperationResult> RegisterAsync(RegisterModel model)
         {
@@ -187,13 +199,17 @@ namespace Backend.API.Services
 
         public async Task<IOperationResult<TokenResponseDto?>> RefreshAccessToken(string refToken, string clientIp)
         {
+            Console.WriteLine($"RefreshAccessToken called from IP {clientIp}. Beginning token hash and lookup.");
+
             var refTokenHashed = TokenHelper.HashToken(refToken);
+            Console.WriteLine($"Computed hash for provided refresh token: {refTokenHashed}");
+
             var existingToken = await _dbContext.RefreshTokens
                 .FirstOrDefaultAsync(rt => rt.TokenHash == refTokenHashed);
 
             if (existingToken is null)
             {
-                _logger.LogError("Refresh token failed: Invalid refresh token.");
+                _logger.LogWarning("Refresh token lookup failed: no matching token for hash {TokenHash}.", refTokenHashed);
                 return OperationResult<TokenResponseDto?>.Failed(new ApiErrorDto
                 {
                     Title = "Invalid refresh token.",
@@ -201,8 +217,11 @@ namespace Backend.API.Services
                 });
             }
 
+            Console.WriteLine($"Found refresh token record. UserId: {existingToken.UserId}, Expires: {existingToken.Expires}, IsActive: {existingToken.IsActive}, CreatedByIp: {existingToken.CreatedByIp}");
+
             if (!existingToken.IsActive)
             {
+                _logger.LogWarning("Inactive refresh token used for UserId {UserId}. Revoking all user tokens as a precaution.", existingToken.UserId);
                 // If a revoked token is used, revoke ALL user's refresh tokens
                 await RevokeAllUserRefreshTokens(existingToken.UserId, clientIp, "Detected use of revoked token");
                 return OperationResult<TokenResponseDto?>.Failed(new ApiErrorDto
@@ -227,7 +246,7 @@ namespace Backend.API.Services
             existingToken.RevokedByIp = clientIp;
 
             // Create new refresh token
-            var newRefreshTokenPlain = TokenHelper.RandomTokenUrlSafe(64);
+            var newRefreshTokenPlain = TokenHelper.RandomTokenUrlSafe(RefreshTokenLength);
             var newRefreshTokenHash = TokenHelper.HashToken(newRefreshTokenPlain);
 
             var newRefreshToken = new RefreshToken
@@ -361,44 +380,6 @@ namespace Backend.API.Services
             return OperationResult.Success();
         }
 
-        public async Task<IOperationResult> LogoutWithAccessTokenAsync(string accessToken, string requestIp, string reason)
-        {
-            if (string.IsNullOrWhiteSpace(accessToken))
-            {
-                _logger.LogError("Revoke failed: AccessToken is null or empty.");
-                return OperationResult.Failed(new ApiErrorDto
-                {
-                    Title = "AccessToken is required.",
-                    ErrorCode = "InvalidAccessToken",
-                });
-            }
-
-            var principal = TokenHelper.GetPrincipalFromExpiredToken(accessToken, _configuration);
-            if (principal is null)
-            {
-                _logger.LogError("Revoke failed: Invalid access token.");
-                return OperationResult.Failed(new ApiErrorDto
-                {
-                    Title = "Invalid access token.",
-                    ErrorCode = "InvalidAccessToken",
-                });
-            }
-
-            var userId = principal.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrEmpty(userId))
-            {
-                _logger.LogError("Revoke failed: UserId not found in access token.");
-                return OperationResult.Failed(new ApiErrorDto
-                {
-                    Title = "UserId not found in access token.",
-                    ErrorCode = "UserIdNotFound",
-                });
-            }
-
-            await RevokeAllUserRefreshTokens(userId, requestIp, reason);
-
-            return OperationResult.Success();
-        }
 
         private async Task RevokeToken(string refreshToken, string revokedByIp, string reason)
         {
@@ -424,7 +405,7 @@ namespace Backend.API.Services
         private async Task RevokeAllUserRefreshTokens(string userId, string revokedByIp, string reason)
         {
             var tokens = await _dbContext.RefreshTokens
-                .Where(rt => rt.UserId == userId && rt.IsActive)
+                .Where(rt => rt.UserId == userId && rt.Revoked == null && DateTime.UtcNow < rt.Expires)
                 .ToListAsync();
 
             foreach (var token in tokens)
